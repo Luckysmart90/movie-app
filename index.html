@@ -1,1 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0b10">
+<title>CineBox</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  html,body{background:#0b0b10;overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+  .no-scrollbar::-webkit-scrollbar{display:none}
+  .no-scrollbar{-ms-overflow-style:none;scrollbar-width:none}
+  .snap-x-m{scroll-snap-type:x mandatory}
+  .snap-c{scroll-snap-align:center}
+  .snap-s{scroll-snap-align:start}
+  .safe-bottom{padding-bottom:env(safe-area-inset-bottom)}
+  .safe-top{padding-top:env(safe-area-inset-top)}
+  .fade-in{animation:fade .35s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .poster-fallback{background:linear-gradient(135deg,#2a1b3d,#44107a 60%,#b3123b)}
+</style>
+</head>
+<body class="text-white font-sans">
 
+<div id="app" class="max-w-md mx-auto min-h-screen relative bg-[#0b0b10]">
+
+  <!-- HOME -->
+  <main id="view-home" class="pb-28">
+    <div class="relative">
+      <div id="banner" class="flex overflow-x-auto snap-x-m no-scrollbar"></div>
+      <div class="absolute top-0 left-0 right-0 safe-top px-4 pt-4 flex items-center justify-between pointer-events-none">
+        <h1 class="text-2xl font-extrabold tracking-tight pointer-events-auto"><span class="text-rose-500">CINE</span>BOX</h1>
+        <span id="demoBadge" class="hidden text-[10px] bg-white/15 backdrop-blur px-2 py-1 rounded-full pointer-events-auto">DEMO MODE</span>
+      </div>
+      <div id="dots" class="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5"></div>
+    </div>
+    <div id="rows" class="mt-5 space-y-6"></div>
+  </main>
+
+  <!-- SEARCH -->
+  <main id="view-search" class="hidden pb-28 safe-top">
+    <div class="sticky top-0 z-20 bg-[#0b0b10]/95 backdrop-blur px-4 pt-5 pb-3">
+      <div class="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-3">
+        <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="searchInput" type="search" placeholder="Search movies..." autocomplete="off"
+          class="bg-transparent outline-none w-full text-base placeholder-white/40">
+      </div>
+    </div>
+    <div id="searchGrid" class="grid grid-cols-3 gap-3 px-4 mt-2"></div>
+    <p id="searchEmpty" class="hidden text-center text-white/50 mt-16">No movies found.</p>
+  </main>
+
+  <!-- WATCHLIST -->
+  <main id="view-watch" class="hidden pb-28 safe-top">
+    <h2 class="px-4 pt-6 pb-3 text-2xl font-bold">My Watchlist</h2>
+    <div id="watchGrid" class="grid grid-cols-3 gap-3 px-4"></div>
+    <p id="watchEmpty" class="hidden text-center text-white/50 mt-16 px-8">Nothing here yet. Open a movie and tap “+ Watchlist”.</p>
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="fixed bottom-0 left-0 right-0 z-30">
+    <div class="max-w-md mx-auto bg-[#0b0b10]/95 backdrop-blur border-t border-white/10 flex safe-bottom">
+      <button data-tab="home" class="nav flex-1 py-3 flex flex-col items-center gap-1 text-xs">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button data-tab="search" class="nav flex-1 py-3 flex flex-col items-center gap-1 text-xs">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
+      <button data-tab="watch" class="nav flex-1 py-3 flex flex-col items-center gap-1 text-xs">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Watchlist</button>
+    </div>
+  </nav>
+
+  <!-- PLAYER MODAL -->
+  <div id="modal" class="hidden fixed inset-0 z-50 bg-black">
+    <div class="max-w-md mx-auto h-full flex flex-col overflow-y-auto no-scrollbar">
+      <div class="flex items-center justify-between p-4 safe-top">
+        <span class="text-sm text-white/60">Now Playing</span>
+        <button id="closeBtn" class="bg-rose-600 hover:bg-rose-500 active:scale-95 transition px-5 py-2 rounded-full font-bold text-sm">✕ Close</button>
+      </div>
+      <div id="playerBox" class="w-full aspect-video bg-black"></div>
+      <div class="p-4 space-y-3">
+        <h2 id="mTitle" class="text-2xl font-bold"></h2>
+        <div id="mMeta" class="text-sm text-white/60"></div>
+        <p id="mOverview" class="text-sm text-white/80 leading-relaxed"></p>
+        <button id="mWatch" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-semibold"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =====================================================
+   1) PASTE YOUR FREE TMDB API KEY BETWEEN THE QUOTES.
+      Get one at https://www.themoviedb.org/settings/api
+      Leave it empty to run with the built-in demo movies.
+   ===================================================== */
+const TMDB_API_KEY = "";
+
+const TMDB = "https://api.themoviedb.org/3";
+const IMG = "https://image.tmdb.org/t/p/w342";
+const IMG_BIG = "https://image.tmdb.org/t/p/w780";
+
+/* ---------- Fallback demo data (works with no key) ---------- */
+const DEMO = [
+  {id:27205,title:"Inception",year:2010,rating:8.4,poster:"/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg",genres:["Action","Sci-Fi"],yt:"YoHD9XEInc0",overview:"A thief who steals secrets through dream-sharing technology is given the inverse task of planting an idea in a target's mind."},
+  {id:157336,title:"Interstellar",year:2014,rating:8.4,poster:"/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",genres:["Sci-Fi"],yt:"zSWdZVtXT7E",overview:"A team of explorers travels through a wormhole in space in an attempt to ensure humanity's survival."},
+  {id:155,title:"The Dark Knight",year:2008,rating:8.5,poster:"/qJ2tW6WMUDux911r6m7haRef0WH.jpg",genres:["Action"],yt:"EXeTwQWrcwY",overview:"Batman faces the Joker, a criminal mastermind who plunges Gotham into anarchy."},
+  {id:438631,title:"Dune",year:2021,rating:7.8,poster:"/d5NXSklXo0qyIYkgV94XAgMIckC.jpg",genres:["Sci-Fi","Action"],yt:"n9xhJrPXop4",overview:"Paul Atreides travels to the dangerous desert planet Arrakis to ensure the future of his family and people."},
+  {id:603,title:"The Matrix",year:1999,rating:8.2,poster:"/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",genres:["Action","Sci-Fi"],yt:"vKQi3bBA1y8",overview:"A hacker discovers the world he lives in is a simulation and joins a rebellion against its machine rulers."},
+  {id:76341,title:"Mad Max: Fury Road",year:2015,rating:7.6,poster:"/8tZYtuWezp8JbcsvHYO0O46tFbo.jpg",genres:["Action","Sci-Fi"],yt:"",overview:"In a post-apocalyptic wasteland, a woman rebels against a tyrannical ruler in search of her homeland."},
+  {id:245891,title:"John Wick",year:2014,rating:7.4,poster:"/fZPSd91yGE9fCcCe6OoQr6E3Bev.jpg",genres:["Action"],yt:"",overview:"An ex-hitman comes out of retirement to track down the gangsters who took everything from him."},
+  {id:680,title:"Pulp Fiction",year:1994,rating:8.5,poster:"/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",genres:["Crime"],yt:"",overview:"The lives of two hitmen, a boxer and a pair of diners intertwine in four tales of violence and redemption."},
+  {id:238,title:"The Godfather",year:1972,rating:8.7,poster:"/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",genres:["Crime"],yt:"",overview:"The aging patriarch of an organized crime dynasty transfers control to his reluctant son."},
+  {id:550,title:"Fight Club",year:1999,rating:8.4,poster:"/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK.jpg",genres:["Drama"],yt:"",overview:"An insomniac office worker and a soap maker form an underground fight club that evolves into something much more."},
+  {id:120,title:"The Fellowship of the Ring",year:2001,rating:8.4,poster:"/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg",genres:["Fantasy"],yt:"",overview:"A hobbit sets out to destroy a powerful ring with the help of a fellowship of heroes."},
+  {id:278,title:"The Shawshank Redemption",year:1994,rating:8.7,poster:"/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg",genres:["Drama"],yt:"",overview:"Framed for murder, a banker forms an unlikely friendship in prison and finds hope."}
+].map(m=>({...m,backdrop:m.poster,demo:true}));
+
+/* ---------- State ---------- */
+const state = {
+  rows: {},          // name -> movie[]
+  all: new Map(),    // id -> movie
+  watch: [],
+  featured: []
+};
+try { state.watch = JSON.parse(localStorage.getItem("cinebox_watch") || "[]"); } catch(e){}
+const saveWatch = () => { try{ localStorage.setItem("cinebox_watch", JSON.stringify(state.watch)); }catch(e){} };
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- Data loading ---------- */
+function normalize(m){
+  return {
+    id: m.id,
+    title: m.title || m.name || "Untitled",
+    year: (m.release_date || "").slice(0,4) || "",
+    rating: m.vote_average ? Number(m.vote_average) : 0,
+    poster: m.poster_path || "",
+    backdrop: m.backdrop_path || m.poster_path || "",
+    overview: m.overview || "No description available.",
+    genres: [], yt: "", demo: false
+  };
+}
+async function tmdb(path){
+  const sep = path.includes("?") ? "&" : "?";
+  const r = await fetch(`${TMDB}${path}${sep}api_key=${TMDB_API_KEY}&language=en-US`);
+  if(!r.ok) throw new Error("TMDB " + r.status);
+  return r.json();
+}
+async function loadData(){
+  if(TMDB_API_KEY){
+    try{
+      const [tr, top, act, sci] = await Promise.all([
+        tmdb("/trending/movie/week"),
+        tmdb("/movie/top_rated"),
+        tmdb("/discover/movie?with_genres=28&sort_by=popularity.desc"),
+        tmdb("/discover/movie?with_genres=878&sort_by=popularity.desc")
+      ]);
+      const map = r => r.results.map(normalize);
+      state.rows = {"Trending":map(tr),"Top Rated":map(top),"Action":map(act),"Sci-Fi":map(sci)};
+      state.featured = state.rows["Trending"].slice(0,5);
+      return;
+    }catch(e){ console.warn("TMDB failed, using demo data:", e); }
+  }
+  $("#demoBadge").classList.remove("hidden");
+  const by = g => DEMO.filter(m=>m.genres.includes(g));
+  state.rows = {
+    "Trending": [...DEMO].sort((a,b)=>b.id%7-a.id%7),
+    "Top Rated": [...DEMO].sort((a,b)=>b.rating-a.rating),
+    "Action": by("Action"),
+    "Sci-Fi": by("Sci-Fi")
+  };
+  state.featured = DEMO.slice(0,5);
+}
+
+/* ---------- Rendering ---------- */
+function posterSrc(m, big){
+  if(!m.poster && !m.backdrop) return "";
+  return (big ? IMG_BIG : IMG) + (big ? (m.backdrop || m.poster) : m.poster);
+}
+function posterCard(m, cls){
+  const src = posterSrc(m);
+  return `<button data-id="${m.id}" class="open ${cls} relative rounded-lg overflow-hidden bg-white/5 active:scale-95 transition aspect-[2/3] poster-fallback">
+    ${src ? `<img loading="lazy" src="${src}" alt="${esc(m.title)}" class="absolute inset-0 w-full h-full object-cover" onerror="this.remove()">` : ""}
+    <span class="absolute inset-x-0 bottom-0 p-2 text-left text-[11px] font-semibold leading-tight bg-gradient-to-t from-black/90 to-transparent pt-8">${esc(m.title)}</span>
+  </button>`;
+}
+function register(list){ list.forEach(m => { if(!state.all.has(m.id)) state.all.set(m.id, m); }); }
+
+function renderBanner(){
+  const b = $("#banner");
+  b.innerHTML = state.featured.map(m=>{
+    const src = posterSrc(m, true);
+    return `<div class="snap-c shrink-0 w-full relative h-[62vh] min-h-[420px] poster-fallback">
+      ${src ? `<img src="${src}" class="absolute inset-0 w-full h-full object-cover" alt="" onerror="this.remove()">`:""}
+      <div class="absolute inset-0 bg-gradient-to-t from-[#0b0b10] via-[#0b0b10]/40 to-black/30"></div>
+      <div class="absolute bottom-10 left-4 right-4">
+        <h2 class="text-3xl font-extrabold drop-shadow">${esc(m.title)}</h2>
+        <p class="text-xs text-white/70 mt-1">★ ${m.rating ? m.rating.toFixed(1) : "–"} ${m.year ? "· "+m.year : ""}</p>
+        <p class="text-sm text-white/80 mt-2 line-clamp-2">${esc(m.overview)}</p>
+        <button data-id="${m.id}" class="open mt-3 bg-white text-black font-bold px-6 py-2.5 rounded-full flex items-center gap-2 active:scale-95 transition">▶ Play</button>
+      </div>
+    </div>`;
+  }).join("");
+  $("#dots").innerHTML = state.featured.map((_,i)=>`<span class="dot h-1.5 rounded-full bg-white/40 transition-all ${i===0?"w-5 !bg-white":"w-1.5"}"></span>`).join("");
+  b.onscroll = () => {
+    const i = Math.round(b.scrollLeft / b.clientWidth);
+    document.querySelectorAll(".dot").forEach((d,k)=>{
+      d.classList.toggle("w-5", k===i); d.classList.toggle("w-1.5", k!==i); d.classList.toggle("!bg-white", k===i);
+    });
+  };
+  let idx = 0;
+  clearInterval(window._bt);
+  window._bt = setInterval(()=>{
+    if(!$("#view-home").classList.contains("hidden") && $("#modal").classList.contains("hidden")){
+      idx = (Math.round(b.scrollLeft / b.clientWidth) + 1) % state.featured.length;
+      b.scrollTo({left: idx * b.clientWidth, behavior:"smooth"});
+    }
+  }, 5000);
+}
+function renderRows(){
+  $("#rows").innerHTML = Object.entries(state.rows).map(([name, list])=>`
+    <section>
+      <h3 class="px-4 mb-2 text-lg font-bold">${esc(name)}</h3>
+      <div class="flex gap-3 overflow-x-auto no-scrollbar px-4 snap-x-m">
+        ${list.map(m=>posterCard(m,"snap-s shrink-0 w-32")).join("")}
+      </div>
+    </section>`).join("");
+}
+function renderGrid(el, list){
+  el.innerHTML = list.map(m=>posterCard(m,"w-full fade-in")).join("");
+}
+function renderWatch(){
+  const list = state.watch.map(id=>state.all.get(id)).filter(Boolean);
+  renderGrid($("#watchGrid"), list);
+  $("#watchEmpty").classList.toggle("hidden", list.length>0);
+}
+
+/* ---------- Search ---------- */
+let searchTimer;
+function runSearch(){
+  const q = $("#searchInput").value.trim().toLowerCase();
+  const pool = [...state.all.values()];
+  let res = q ? pool.filter(m=>m.title.toLowerCase().includes(q)) : pool;
+  renderGrid($("#searchGrid"), res);
+  $("#searchEmpty").classList.toggle("hidden", res.length>0);
+  // With a key, also ask TMDB for matches beyond what's loaded
+  if(TMDB_API_KEY && q.length>1){
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(async()=>{
+      try{
+        const r = await tmdb("/search/movie?query="+encodeURIComponent(q));
+        const found = r.results.map(normalize);
+        register(found);
+        if($("#searchInput").value.trim().toLowerCase()===q){
+          const merged = [...new Map([...res, ...found].map(m=>[m.id,m])).values()];
+          renderGrid($("#searchGrid"), merged);
+          $("#searchEmpty").classList.toggle("hidden", merged.length>0);
+        }
+      }catch(e){}
+    }, 350);
+  }
+}
+
+/* ---------- Tabs ---------- */
+function showTab(t){
+  ["home","search","watch"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==t));
+  document.querySelectorAll(".nav").forEach(b=>{
+    const on = b.dataset.tab===t;
+    b.classList.toggle("text-rose-500", on); b.classList.toggle("text-white/50", !on);
+  });
+  if(t==="search") runSearch();
+  if(t==="watch") renderWatch();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Player modal ---------- */
+let current = null;
+async function openMovie(id){
+  const m = state.all.get(Number(id)); if(!m) return;
+  current = m;
+  $("#mTitle").textContent = m.title;
+  $("#mMeta").textContent = `★ ${m.rating ? m.rating.toFixed(1) : "–"}${m.year ? "  ·  "+m.year : ""}${m.genres.length ? "  ·  "+m.genres.join(", ") : ""}`;
+  $("#mOverview").textContent = m.overview;
+  updateWatchBtn();
+  $("#modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+
+  const box = $("#playerBox");
+  box.innerHTML = `<div class="w-full h-full flex items-center justify-center text-white/50 text-sm">Loading player…</div>`;
+
+  // Official trailer from YouTube (via TMDB when a key is set)
+  let key = m.yt;
+  if(!key && TMDB_API_KEY && !m.demo){
+    try{
+      const v = await tmdb(`/movie/${m.id}/videos`);
+      const t = v.results.find(x=>x.site==="YouTube" && x.type==="Trailer") || v.results.find(x=>x.site==="YouTube");
+      key = t ? t.key : "";
+      m.yt = key;
+    }catch(e){}
+  }
+  if(current !== m) return;
+  if(key){
+    box.innerHTML = `<iframe class="w-full h-full" src="https://www.youtube.com/embed/${encodeURIComponent(key)}?autoplay=1&playsinline=1&rel=0"
+      allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen frameborder="0"></iframe>`;
+  } else {
+    const bg = posterSrc(m,true);
+    box.innerHTML = `<div class="relative w-full h-full poster-fallback">
+      ${bg?`<img src="${bg}" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="" onerror="this.remove()">`:""}
+      <div class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+        <div class="text-4xl">🎬</div>
+        <p class="text-sm mt-2 text-white/80">${TMDB_API_KEY ? "No trailer available for this title." : "Demo mode: add your TMDB key to load trailers for every movie."}</p>
+      </div></div>`;
+  }
+}
+function closeMovie(){
+  $("#playerBox").innerHTML = "";   // stops playback
+  $("#modal").classList.add("hidden");
+  document.body.style.overflow = "";
+  current = null;
+}
+function updateWatchBtn(){
+  if(!current) return;
+  const has = state.watch.includes(current.id);
+  $("#mWatch").textContent = has ? "✓ In Watchlist (tap to remove)" : "+ Watchlist";
+}
+function toggleWatch(){
+  if(!current) return;
+  const i = state.watch.indexOf(current.id);
+  if(i>-1) state.watch.splice(i,1); else state.watch.push(current.id);
+  saveWatch(); updateWatchBtn();
+  if(!$("#view-watch").classList.contains("hidden")) renderWatch();
+}
+
+/* ---------- Events ---------- */
+document.addEventListener("click", e=>{
+  const o = e.target.closest(".open"); if(o){ openMovie(o.dataset.id); return; }
+  const n = e.target.closest(".nav"); if(n){ showTab(n.dataset.tab); }
+});
+$("#closeBtn").addEventListener("click", closeMovie);
+$("#mWatch").addEventListener("click", toggleWatch);
+$("#searchInput").addEventListener("input", runSearch);
+document.addEventListener("keydown", e=>{ if(e.key==="Escape" && current) closeMovie(); });
+
+/* ---------- Boot ---------- */
+(async function init(){
+  await loadData();
+  Object.values(state.rows).forEach(register);
+  register(state.featured);
+  // saved watchlist items need to exist in state.all (they do for demo / loaded rows)
+  renderBanner(); renderRows(); showTab("home");
+})();
+</script>
+</body>
+</html>
