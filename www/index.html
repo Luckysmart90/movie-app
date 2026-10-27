@@ -325,9 +325,12 @@ let archiveFilms = [];
 let archiveLoadStarted = false;
 function archiveRuntimeSeconds(value){
   if (value == null || value === "") return 0;
-  if (typeof value === "number") return value > 1000 ? value : 0;
+  if (typeof value === "number") return Number.isFinite(value) && value > 0 ? value : 0;
   const s = String(value).trim();
-  if (/^\d+(\.\d+)?$/.test(s)) return Number(s) > 1000 ? Number(s) : 0;
+  if (/^\d+(\.\d+)?$/.test(s)) {
+    const seconds = Number(s);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  }
   const parts = s.split(":").map(Number);
   if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0]*3600+parts[1]*60+parts[2];
   if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0]*60+parts[1];
@@ -353,10 +356,14 @@ async function loadArchiveFilms(){
         if (!r.ok) return null;
         const m = await r.json();
         const files = Array.isArray(m.files) ? m.files : [];
-        const video = files.find(f => /^.+\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000);
+        const video = files
+          .filter(f => /^.+\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000)
+          .sort((a,b) => Number(b.size || 0) - Number(a.size || 0))[0];
         if (!video) return null;
-        const seconds = archiveRuntimeSeconds((m.metadata && (m.metadata.runtime || m.metadata.length)) || d.runtime);
-        if (seconds && seconds < 3600) return null;
+        // Only accept films with an explicit, parseable runtime of at least 60 minutes.
+        // Missing duration metadata is not proof that a file is a full-length movie.
+        const seconds = archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
+        if (seconds < 3600) return null;
         const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
         if (!/creativecommons.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/4\.0|publicdomain/i.test(license)) return null;
         return {
@@ -372,7 +379,7 @@ async function loadArchiveFilms(){
     archiveFilms = metadata.filter(Boolean);
     renderArchiveFilms();
     status.textContent = archiveFilms.length
-      ? archiveFilms.length + " full-length MP4 films found with an open licence listed by the uploader. Check the source rights page for each film."
+      ? archiveFilms.length + " films with a listed runtime of at least 60 minutes and an open licence claimed by the uploader. Check each source rights page."
       : "No matching full-length MP4 films were found right now. Try again later or browse Internet Archive directly.";
   } catch (e) {
     status.textContent = "Could not load the film catalogue right now. Check your connection or open Internet Archive directly below.";
