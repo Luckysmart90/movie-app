@@ -57,6 +57,19 @@
     <p id="watchEmpty" class="hidden text-center text-white/50 mt-16 px-8">Nothing here yet. Open a movie and tap “+ Watchlist”.</p>
   </main>
 
+  <!-- FREE MOVIES -->
+  <main id="view-free" class="hidden pb-28 safe-top">
+    <div class="px-4 pt-6 pb-3">
+      <h2 class="text-2xl font-bold">Free Movies</h2>
+      <p class="text-xs text-white/60 mt-1">Watch and save films with Creative Commons license information from Internet Archive.</p>
+      <input id="freeSearch" type="search" placeholder="Search free movie titles..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
+      <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading free movies…</p>
+      <p class="text-[11px] text-white/40 mt-2">Check each film's license and details on Internet Archive before reusing or sharing it.</p>
+    </div>
+    <div id="freeGrid" class="grid grid-cols-2 gap-3 px-4"></div>
+    <a href="https://archive.org/details/feature_films" target="_blank" rel="noopener" class="block mx-4 mt-5 text-center rounded-xl bg-white/10 py-3 text-sm font-semibold">Browse more films on Internet Archive ↗</a>
+  </main>
+
   <!-- BOTTOM NAV -->
   <nav class="fixed bottom-0 left-0 right-0 z-30">
     <div class="max-w-md mx-auto bg-[#0b0b10]/95 backdrop-blur border-t border-white/10 flex safe-bottom">
@@ -66,6 +79,8 @@
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Search</button>
       <button data-tab="watch" class="nav flex-1 py-3 flex flex-col items-center gap-1 text-xs">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"/></svg>Watchlist</button>
+      <button data-tab="free" class="nav flex-1 py-3 flex flex-col items-center gap-1 text-xs">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3v18m-9-9h18"/></svg>Free Movies</button>
     </div>
   </nav>
 
@@ -128,7 +143,9 @@ const state = {
   rows: {},          // name -> movie[]
   all: new Map(),    // id -> movie
   watch: [],
-  featured: []
+  featured: [],
+  freeMovies: [],
+  freeLoaded: false
 };
 try { state.watch = JSON.parse(localStorage.getItem("cinebox_watch") || "[]"); } catch(e){}
 const saveWatch = () => { try{ localStorage.setItem("cinebox_watch", JSON.stringify(state.watch)); }catch(e){} };
@@ -270,15 +287,108 @@ function runSearch(){
   }
 }
 
+/* ---------- Free licensed movies from Internet Archive ---------- */
+function freeCard(m){
+  const poster = "https://archive.org/services/img/" + encodeURIComponent(m.id);
+  return '<article class="rounded-xl overflow-hidden bg-white/5 border border-white/10">' +
+    '<div class="aspect-[2/3] bg-white/5 relative"><img src="' + poster + '" alt="" loading="lazy" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display=\'none\'"></div>' +
+    '<div class="p-3"><h3 class="font-semibold text-sm leading-snug">' + esc(m.title) + '</h3>' +
+    '<p class="text-[11px] text-white/50 mt-1">' + esc(m.year || "Year unknown") + '</p>' +
+    '<p class="text-[10px] text-emerald-300 mt-1">License information available</p>' +
+    '<button data-free-id="' + esc(m.id) + '" class="free-open mt-3 w-full rounded-lg bg-white/10 py-2 text-sm font-semibold">▶ Watch</button>' +
+    '<button data-free-download="' + esc(m.id) + '" class="free-download mt-2 w-full rounded-lg bg-rose-600 py-2 text-sm font-bold">⬇ Download</button>' +
+    '<a href="https://archive.org/details/' + encodeURIComponent(m.id) + '" target="_blank" rel="noopener" class="block mt-2 text-center text-[11px] text-white/50 underline">Source &amp; license</a></div></article>';
+}
+function renderFreeMovies(){
+  const q = ($("#freeSearch").value || "").trim().toLowerCase();
+  const list = state.freeMovies.filter(m => !q || m.title.toLowerCase().includes(q));
+  $("#freeGrid").innerHTML = list.map(freeCard).join("");
+  if (state.freeLoaded) $("#freeStatus").textContent = list.length
+    ? list.length + " film" + (list.length===1 ? "" : "s") + " with Creative Commons license information."
+    : "No matching films in this list. Try another title or browse Internet Archive.";
+}
+async function loadFreeMovies(){
+  if (state.freeLoaded) { renderFreeMovies(); return; }
+  const status = $("#freeStatus");
+  status.textContent = "Finding films with Creative Commons license information…";
+  try {
+    const params = new URLSearchParams();
+    params.set("q", "mediatype:movies AND licenseurl:*creativecommons.org*");
+    params.set("rows", "24"); params.set("page", "1"); params.set("output", "json");
+    ["identifier","title","year","licenseurl"].forEach(field => params.append("fl[]", field));
+    params.append("sort[]", "downloads desc");
+    const search = await fetch("https://archive.org/advancedsearch.php?" + params.toString());
+    if (!search.ok) throw new Error("Internet Archive search returned HTTP " + search.status);
+    const payload = await search.json();
+    const docs = (payload.response && payload.response.docs) || [];
+    const items = await Promise.all(docs.slice(0, 18).map(async doc => {
+      try {
+        const mr = await fetch("https://archive.org/metadata/" + encodeURIComponent(doc.identifier));
+        if (!mr.ok) return null;
+        const meta = await mr.json();
+        const license = String(meta.metadata && meta.metadata.licenseurl || doc.licenseurl || "");
+        if (!license.toLowerCase().includes("creativecommons.org")) return null;
+        const files = (meta.files || []).filter(file => typeof file.name === "string" &&
+          file.name.toLowerCase().endsWith(".mp4") && !file.name.toLowerCase().includes("sample") &&
+          (!file.size || Number(file.size) < 2000000000));
+        if (!files.length) return null;
+        files.sort((a,b) => {
+          const score = file => (file.name.toLowerCase().endsWith("_ia.mp4") || file.name.toLowerCase().endsWith(".ia.mp4") ? 0 : 1);
+          return score(a)-score(b) || Number(a.size||0)-Number(b.size||0);
+        });
+        return {
+          id: doc.identifier,
+          title: String(meta.metadata && (meta.metadata.title || meta.metadata.identifier) || doc.title || doc.identifier),
+          year: String(meta.metadata && (meta.metadata.year || meta.metadata.date) || doc.year || "").slice(0,4),
+          license: license,
+          fileName: files[0].name,
+          videoUrl: "https://archive.org/download/" + encodeURIComponent(doc.identifier) + "/" + encodeURIComponent(files[0].name)
+        };
+      } catch(e) { return null; }
+    }));
+    state.freeMovies = items.filter(Boolean); state.freeLoaded = true; renderFreeMovies();
+    if (!state.freeMovies.length) status.textContent = "No compatible MP4 films with visible Creative Commons license information were found right now. Try Browse more films on Internet Archive.";
+  } catch (e) {
+    status.textContent = "Could not load the free movie list. Check your internet connection, or browse Internet Archive directly below.";
+  }
+}
+function openFreeMovie(id){
+  const m = state.freeMovies.find(item => item.id === id);
+  if (!m) return;
+  current = m;
+  $("#mTitle").textContent = m.title;
+  $("#mMeta").textContent = (m.year || "Year unknown") + " · Internet Archive";
+  $("#mOverview").textContent = "This film is hosted by Internet Archive. Check the source page for the exact license and any reuse conditions.";
+  $("#mWatch").classList.add("hidden");
+  $("#videoUrlInput").value = m.videoUrl;
+  $("#downloadStatus").textContent = "This movie has a direct MP4 file. Tap Download to save it to your CineBox Gallery album.";
+  $("#playerBox").innerHTML = '<video class="w-full h-full bg-black" controls playsinline autoplay src="' + m.videoUrl + '"></video>';
+  $("#modal").classList.remove("hidden"); document.body.style.overflow = "hidden";
+}
+async function downloadFreeMovie(id, button){
+  const m = state.freeMovies.find(item => item.id === id);
+  if (!m) return;
+  button.disabled = true;
+  const old = button.textContent; button.textContent = "Preparing…";
+  try {
+    const result = await window.downloadVideoToGallery(m.videoUrl, {fileName: m.title.replace(/[^a-z0-9_-]/gi, "_") + ".mp4"});
+    button.textContent = result && result.location === "Gallery" ? "✓ Saved to Gallery" : "✓ Download started";
+  } catch (e) {
+    alert((e && e.message ? e.message : String(e)) + "\n\nOpen Source & license to confirm the file is available, or tap Watch and try Download from the player.");
+    button.textContent = old;
+  } finally { button.disabled = false; }
+}
+
 /* ---------- Tabs ---------- */
 function showTab(t){
-  ["home","search","watch"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==t));
+  ["home","search","watch","free"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==t));
   document.querySelectorAll(".nav").forEach(b=>{
     const on = b.dataset.tab===t;
     b.classList.toggle("text-rose-500", on); b.classList.toggle("text-white/50", !on);
   });
   if(t==="search") runSearch();
   if(t==="watch") renderWatch();
+  if(t==="free") loadFreeMovies();
   window.scrollTo(0,0);
 }
 
@@ -290,6 +400,8 @@ async function openMovie(id){
   $("#mTitle").textContent = m.title;
   $("#mMeta").textContent = `★ ${m.rating ? m.rating.toFixed(1) : "–"}${m.year ? "  ·  "+m.year : ""}${m.genres.length ? "  ·  "+m.genres.join(", ") : ""}`;
   $("#mOverview").textContent = m.overview;
+  $("#mWatch").classList.remove("hidden");
+  $("#videoUrlInput").value = "";
   updateWatchBtn();
   $("#modal").classList.remove("hidden");
   document.body.style.overflow = "hidden";
@@ -323,6 +435,7 @@ async function openMovie(id){
 }
 function closeMovie(){
   $("#playerBox").innerHTML = "";   // stops playback
+  $("#mWatch").classList.remove("hidden");
   $("#modal").classList.add("hidden");
   document.body.style.overflow = "";
   current = null;
@@ -342,9 +455,14 @@ function toggleWatch(){
 
 /* ---------- Events ---------- */
 document.addEventListener("click", e=>{
+  const freeOpen = e.target.closest(".free-open");
+  if (freeOpen) { openFreeMovie(freeOpen.dataset.freeId); return; }
+  const freeDownload = e.target.closest(".free-download");
+  if (freeDownload) { downloadFreeMovie(freeDownload.dataset.freeDownload, freeDownload); return; }
   const o = e.target.closest(".open"); if(o){ openMovie(o.dataset.id); return; }
   const n = e.target.closest(".nav"); if(n){ showTab(n.dataset.tab); }
 });
+$("#freeSearch").addEventListener("input", renderFreeMovies);
 $("#closeBtn").addEventListener("click", closeMovie);
 $("#mWatch").addEventListener("click", toggleWatch);
 $("#downloadVideoBtn").addEventListener("click", async () => {
