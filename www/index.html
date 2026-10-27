@@ -262,8 +262,9 @@ onclick="window.open('https://googleapis.com', '_blank')">
 
     <script src="capacitor.js"></script>
     <script src="downloadVideo.js"></script>
-        <script>
-        // SHORT LINES TO PREVENT MOBILE SCREEN CUTOFF
+
+            <script>
+        // UPDATED WITH INLINE DOWNLOAD CONTROLS
         const tmdbBaseUrl = 
 "https://themoviedb.org";
         const tmdbApiKey = 
@@ -353,6 +354,9 @@ onclick="window.open('https://googleapis.com', '_blank')">
                 ? Number(movie.vote_average).toFixed(1) 
                 : "0.0";
             const storySummary = movie.overview || "No description.";
+            
+            const fallbackVideoLink = 
+"https://googleapis.com";
 
             detailsContainer.innerHTML = `
                 <div style="font-size:22px; font-weight:bold; margin-top:10px;">
@@ -362,6 +366,19 @@ onclick="window.open('https://googleapis.com', '_blank')">
                     <span>${releaseYear}</span>
                     <span class="rating-star">⭐ ${scoringValue}</span>
                 </div>
+                
+                <div class="download-box">
+                    <label>Target Download Link</label>
+                    <input type="text" readonly value="${fallbackVideoLink}" />
+                </div>
+                
+                <button class="action-btn" 
+onclick="window.open('${fallbackVideoLink}', '_blank')">
+                    📥 Download video to Gallery
+                </button>
+                
+                <button class="action-btn secondary">+ Watchlist</button>
+                
                 <div class="section-title">Overview</div>
                 <p class="overview-text">${storySummary}</p>
             `;
@@ -391,5 +408,8 @@ onclick="window.open('https://googleapis.com', '_blank')">
         }
     </script>
 </body>
-    </html>
-    
+</html>
+
+        
+
+        
