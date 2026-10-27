@@ -24,7 +24,7 @@
         .download-box { background: #141414; padding: 15px; border-radius: 8px; border: 1px solid #222; margin: 20px 0; text-align: left; }
         .download-box label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; }
         .download-box input { width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
-        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; text-align: center; }
+        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; text-align: center; display: block; text-decoration: none; }
         .action-btn.secondary { background-color: #222; border: 1px solid #333; }
         .section-title { font-size: 14px; color: #666; font-weight: bold; text-transform: uppercase; margin: 25px 0 10px 0; text-align: left; }
         .overview-text { color: #bbb; font-size: 14px; line-height: 1.6; text-align: left; margin: 0; }
@@ -58,9 +58,9 @@
         
         <div class="download-box">
             <label>Target Download Link</label>
-            <input type="text" readonly value="https://googleapis.com" />
+            <input type="text" id="dl-link-input" readonly value="https://googleapis.com" />
         </div>
-        <button class="action-btn" onclick="window.open('https://googleapis.com', '_blank')">
+        <button class="action-btn" id="dl-trigger-btn" onclick="window.open('https://googleapis.com', '_blank')">
             📥 Download video to Gallery
         </button>
         <button class="action-btn secondary">+ Watchlist</button>
@@ -123,7 +123,7 @@
                 card.className = "movie-card";
                 const posterPath = movie.poster_path ? (imageBaseUrl + movie.poster_path) : "https://placeholder.com";
                 const rawDate = movie.release_date || "N/A";
-                const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-') : rawDate;
+                const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
                 const ratingValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
 
                 card.innerHTML = `
@@ -148,9 +148,17 @@
 
             const displayTitle = movie.title || "Untitled Video";
             const rawDate = movie.release_date || "N/A";
-            const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-') : rawDate;
+            const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
             const scoringValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
             const storySummary = movie.overview || "No overview available.";
+
+            // Dynamically assign actual custom links to the browser downloader layer
+            const realMovieDownloadLink = "https://googleapis.com";
+            
+            const linkInput = document.getElementById("dl-link-input");
+            const triggerBtn = document.getElementById("dl-trigger-btn");
+            if(linkInput) linkInput.value = realMovieDownloadLink;
+            if(triggerBtn) triggerBtn.setAttribute("onclick", `window.open('${realMovieDownloadLink}', '_blank')`);
 
             detailsContainer.innerHTML = `
                 <div style="font-size: 22px; font-weight: bold; margin-top: 10px; text-align: left;">${displayTitle}</div>
