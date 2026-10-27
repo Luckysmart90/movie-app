@@ -86,13 +86,14 @@
           <label for="videoUrlInput" class="block text-sm font-semibold">Download a video you own or have permission to save</label>
           <input id="videoUrlInput" type="url" inputmode="url" placeholder="Paste direct video URL (for example, .mp4)" class="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-rose-500">
           <button id="downloadVideoBtn" type="button" class="w-full rounded-xl bg-rose-600 hover:bg-rose-500 py-3 font-bold text-white">⬇ Download to phone</button>
-          <p id="downloadStatus" class="text-xs text-white/60" role="status">On the website, the file downloads to your phone's Downloads folder. Gallery saving requires the installed Android app.</p>
+          <p id="downloadStatus" class="text-xs text-white/60" role="status">In the CineBox Android app, videos are saved to your Gallery in the CineBox album. The website version downloads to Downloads.</p>
         </section>
       </div>
     </div>
   </div>
 </div>
 
+<script src="./media-plugin.js"></script>
 <script src="./downloadVideo.js"></script>
 <script>
 /* =====================================================
@@ -358,18 +359,18 @@ $("#downloadVideoBtn").addEventListener("click", async () => {
     button.textContent = "Preparing download…";
     status.textContent = "Connecting to the video file…";
     if (typeof window.downloadVideoToGallery !== "function") throw new Error("The download helper did not load. Refresh the page and try again.");
-    await window.downloadVideoToGallery(url, {
+    const result = await window.downloadVideoToGallery(url, {
       fileName: (current && current.title ? current.title.replace(/[^a-z0-9_-]/gi, "_") : "video") + ".mp4",
       onProgress: p => { status.textContent = "Downloading: " + p.percent + "%"; }
     });
-    status.textContent = "Download started or completed. Check your phone's Downloads folder.";
+    status.textContent = result && result.location === "Gallery" ? "Saved to your phone's Gallery, in the CineBox album." : "Download started or completed. Check your phone's Downloads folder.";
   } catch (err) {
     const message = err && err.message ? err.message : String(err);
     status.textContent = message;
-    alert(message + "\n\nSome video hosts block downloads from websites. Use a direct video file URL that permits downloading.");
+    alert(message + "\n\nUse a direct video file URL that permits downloading. Streaming pages and video player links usually are not direct video files.");
   } finally {
     button.disabled = false;
-    button.textContent = "⬇ Download to phone";
+    button.textContent = "⬇ Download to Gallery";
   }
 });
 $("#searchInput").addEventListener("input", runSearch);
