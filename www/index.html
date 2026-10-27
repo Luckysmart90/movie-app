@@ -95,6 +95,8 @@
                 const data = await response.json();
                 if (data && data.results) {
                     renderGrid(data.results);
+                } else {
+                    document.getElementById("movie-grid-container").innerHTML = `<div class="empty-state">No movies found in server database.</div>`;
                 }
             } catch (err) {
                 console.error("API connection failed:", err);
