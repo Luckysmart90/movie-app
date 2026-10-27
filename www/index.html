@@ -3,139 +3,177 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CineBox Premium</title>
+    <title>CineBox Premium Live</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #0b0b0b; color: #fff; margin: 0; padding: 0; }
         .header { display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: #111; }
-        .logo { color: #e50914; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .logo { color: #e50914; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; }
         .profile-icon { background: #333; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         .view-page { display: none; padding: 20px; padding-bottom: 80px; }
         #home-view { display: block; }
-        .movie-player-placeholder { background: #1a1a1a; width: 100%; height: 220px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; position: relative; }
+        .movie-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+        .movie-card { background: #141414; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid #222; padding-bottom: 10px; text-align: left; }
+        .movie-poster { width: 100%; height: 220px; background: #222; object-fit: cover; }
+        .movie-card-title { font-size: 14px; font-weight: bold; padding: 8px 8px 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .movie-card-meta { font-size: 12px; color: #aaa; padding: 0 8px; display: flex; justify-content: space-between; }
+        #detail-view { display: none; }
+        .movie-player-placeholder { background: #1a1a1a; width: 100%; height: 220px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
         .play-btn-large { background: #e50914; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; border: none; color: white; cursor: pointer; }
         .meta-container { margin: 15px 0; font-size: 14px; color: #aaa; display: flex; gap: 15px; align-items: center; }
         .rating-star { color: #f5c518; font-weight: bold; }
         .download-box { background: #141414; padding: 15px; border-radius: 8px; border: 1px solid #222; margin: 20px 0; text-align: left; }
-        .download-box label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .download-box input { width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
-        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .download-box label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; }
+        .download-box input { width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; }
+        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; }
         .action-btn.secondary { background-color: #222; border: 1px solid #333; }
-        .section-title { font-size: 14px; color: #666; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin: 25px 0 10px 0; text-align: left; }
+        .section-title { font-size: 14px; color: #666; font-weight: bold; text-transform: uppercase; margin: 25px 0 10px 0; text-align: left; }
         .overview-text { color: #bbb; font-size: 14px; line-height: 1.6; text-align: left; margin: 0; }
         .search-bar { background: #222; border: 1px solid #333; padding: 12px; border-radius: 6px; color: white; width: 100%; box-sizing: border-box; font-size: 15px; margin-bottom: 20px; }
-        .empty-state { color: #555; margin-top: 60px; font-size: 15px; }
+        .empty-state { color: #555; margin-top: 60px; font-size: 15px; text-align: center; }
         .nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #111; border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 10px 0; z-index: 100; }
         .nav-item { background: none; border: none; color: #666; font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
         .nav-item.active { color: #e50914; }
-        .nav-icon { font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <!-- Main Application Header Structure -->
     <div class="header">
-        <div class="logo">CineBox</div>
+        <div class="logo" onclick="backToHome()">CineBox</div>
         <div class="profile-icon">U</div>
     </div>
 
-    <!-- 1. Home View Container -->
     <div id="home-view" class="view-page">
-        <div class="movie-player-placeholder">
-            <button class="play-btn-large">▶</button>
-        </div>
-        
-        <div id="movie-meta-details">
-            <!-- Dynamic parameters load here safely -->
+        <div class="section-title" style="color: #fff; font-size: 16px;">Trending Movies</div>
+        <div id="movie-grid-container" class="movie-grid">
+            <div class="empty-state">Loading your catalog feed...</div>
         </div>
     </div>
 
-    <!-- 2. Search View Container -->
+    <div id="detail-view" class="view-page">
+        <button class="action-btn secondary" style="width: auto; padding: 8px 15px;" onclick="backToHome()">← Back</button>
+        <div class="movie-player-placeholder" style="margin-top: 15px;">
+            <button class="play-btn-large">▶</button>
+        </div>
+        <div id="movie-meta-details"></div>
+    </div>
+
     <div id="search-view" class="view-page">
         <input type="text" class="search-bar" placeholder="Search movies, TV shows..." />
         <div class="empty-state">Type a title above to search CineBox catalog</div>
     </div>
 
-    <!-- 3. Watchlist View Container -->
     <div id="watchlist-view" class="view-page">
         <div class="empty-state">Your saved watchlist items appear here</div>
     </div>
 
-    <!-- Bottom Navigation Bar Layer -->
     <div class="nav-bar">
         <button class="nav-item active" id="btn-home" onclick="changeTab('home')">
-            <span class="nav-icon">🏠</span><span>Home</span>
+            <span style="font-size: 20px;">🏠</span><br><span>Home</span>
         </button>
         <button class="nav-item" id="btn-search" onclick="changeTab('search')">
-            <span class="nav-icon">🔍</span><span>Search</span>
+            <span style="font-size: 20px;">🔍</span><br><span>Search</span>
         </button>
         <button class="nav-item" id="btn-watchlist" onclick="changeTab('watchlist')">
-            <span class="nav-icon">🔖</span><span>Watchlist</span>
+            <span style="font-size: 20px;">🔖</span><br><span>Watchlist</span>
         </button>
     </div>
 
-    <!-- Core Runtime Integrations -->
     <script src="capacitor.js"></script>
     <script src="downloadVideo.js"></script>
-    <script>
-        // Global sample mock details to make sure variables initialize instantly
-        const activeMovieSample = {
-            title: "Project Hail Mary",
-            release_date: "2026-03-20",
-            vote_average: 8.7,
-            download_url: "https://googleapis.com",
-            overview: "Science teacher Ryland Grace wakes up on a spaceship light years from home with no recollection of who he is or how he got there. As his memory returns, he begins to uncover his mission: solve the riddle of the mysterious substance causing the sun to die out. He must call on his scientific knowledge and unorthodox ideas to save everything on Earth from extinction."
-        };
+        <script>
+        const tmdbBaseUrl = "https://themoviedb.org";
+        const tmdbApiKey = "834c382f1f0a996da9e17b8f9a2e379b"; 
+        const imageBaseUrl = "https://tmdb.org";
 
         window.onload = function() {
-            renderMovieDetails(activeMovieSample);
+            fetchLiveCatalog();
         };
 
-        // Tab routing management framework block
-        function changeTab(tabName) {
-            // Remove active color classes from all menu layouts
-            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            // Hide all layout view containers safely
-            document.querySelectorAll('.view-page').forEach(el => el.style.display = 'none');
-            
-            // Activate selection components
-            const selectedView = document.getElementById(tabName + "-view");
-            const selectedButton = document.getElementById("btn-" + tabName);
-            
-            if (selectedView) selectedView.style.display = "block";
-            if (selectedButton) selectedButton.classList.add("active");
+        async function fetchLiveCatalog() {
+            try {
+                const response = await fetch(`${tmdbBaseUrl}/movie/popular?api_key=${tmdbApiKey}&language=en-US&page=1`);
+                const data = await response.json();
+                if (data && data.results) {
+                    renderGrid(data.results);
+                }
+            } catch (err) {
+                console.error("API connection failed:", err);
+                document.getElementById("movie-grid-container").innerHTML = `<div class="empty-state">Network failure. Please check your connection.</div>`;
+            }
         }
 
-        // Render data details safely using proper JavaScript template rules
-        function renderMovieDetails(activeMovie) {
-            if (!activeMovie) return;
-            const container = document.getElementById("movie-meta-details");
+        function renderGrid(movies) {
+            const container = document.getElementById("movie-grid-container");
             if (!container) return;
+            container.innerHTML = "";
 
-            const displayTitle = activeMovie.title || "Untitled Cinematic Feature";
-            const rawDate = activeMovie.release_date || "N/A";
-            const processingYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
-            const scoringValue = activeMovie.vote_average ? Number(activeMovie.vote_average).toFixed(1) : "0.0";
-            const sourceLink = activeMovie.download_url || "https://googleapis.com";
-            const storySummary = activeMovie.overview || "No overview narrative sequence has been registered for this content title layout container.";
+            movies.forEach(movie => {
+                const card = document.createElement("div");
+                card.className = "movie-card";
+                const posterPath = movie.poster_path ? (imageBaseUrl + movie.poster_path) : "https://placeholder.com";
+                const rawDate = movie.release_date || "N/A";
+                const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
+                const ratingValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
 
-            // Merging layout components via standard safe backtick execution structures
-            container.innerHTML = `
-                <div style="font-size: 18px; font-weight: bold; margin-top: 10px; text-align: left;">${displayTitle}</div>
+                card.innerHTML = `
+                    <img class="movie-poster" src="${posterPath}" alt="poster" />
+                    <div class="movie-card-title">${movie.title}</div>
+                    <div class="movie-card-meta">
+                        <span>${releaseYear}</span>
+                        <span style="color: #f5c518;">⭐ ${ratingValue}</span>
+                    </div>
+                `;
+                card.onclick = () => showMovieDetail(movie);
+                container.appendChild(card);
+            });
+        }
+
+        function showMovieDetail(movie) {
+            document.querySelectorAll('.view-page').forEach(el => el.style.display = 'none');
+            document.getElementById("detail-view").style.display = "block";
+
+            const detailsContainer = document.getElementById("movie-meta-details");
+            if (!detailsContainer) return;
+
+            const displayTitle = movie.title || "Untitled Video";
+            const rawDate = movie.release_date || "N/A";
+            const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
+            const scoringValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
+            const fallbackVideoLink = "https://googleapis.com";
+            const storySummary = movie.overview || "No overview available.";
+
+            detailsContainer.innerHTML = `
+                <div style="font-size: 22px; font-weight: bold; margin-top: 10px; text-align: left;">${displayTitle}</div>
                 <div class="meta-container">
-                    <span>${processingYear}</span>
+                    <span>${releaseYear}</span>
                     <span class="rating-star">⭐ ${scoringValue}</span>
                 </div>
                 <div class="download-box">
                     <label>TARGET DOWNLOAD LINK</label>
-                    <input type="text" readonly value="${sourceLink}" />
+                    <input type="text" readonly value="${fallbackVideoLink}" />
                 </div>
-                <button class="action-btn" onclick="window.downloadMovieNatively('${sourceLink}', '${displayTitle.replace(/'/g, "\\'")}')">
+                <button class="action-btn" onclick="window.downloadMovieNatively('${fallbackVideoLink}', '${displayTitle.replace(/'/g, "\\'")}')">
                     📥 Download video to Gallery
                 </button>
                 <button class="action-btn secondary">+ Add to Watchlist</button>
                 <div class="section-title">Overview</div>
                 <p class="overview-text">${storySummary}</p>
             `;
+        }
+
+        function backToHome() {
+            changeTab('home');
+        }
+
+        function changeTab(tabName) {
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.view-page').forEach(el => el.style.display = 'none');
+
+            const selectedView = document.getElementById(tabName + "-view");
+            const selectedButton = document.getElementById("btn-" + tabName);
+
+            if (selectedView) selectedView.style.display = "block";
+            if (selectedButton) selectedButton.classList.add("active");
         }
     </script>
 </body>
