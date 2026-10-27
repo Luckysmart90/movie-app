@@ -1,0 +1,79 @@
+name: Build CineBox Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Add Android platform if missing
+        run: |
+          if [ ! -d android ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Ensure Android media and network permissions
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          ET.register_namespace("android", "http://schemas.android.com/apk/res/android")
+          android = "{http://schemas.android.com/apk/res/android}"
+          tree = ET.parse(path)
+          root = tree.getroot()
+          wanted = {
+              "android.permission.INTERNET": {},
+              "android.permission.READ_MEDIA_VIDEO": {},
+              "android.permission.READ_EXTERNAL_STORAGE": {"maxSdkVersion": "32"},
+              "android.permission.WRITE_EXTERNAL_STORAGE": {"maxSdkVersion": "29"},
+          }
+          existing = {node.get(android + "name"): node for node in root.findall("uses-permission")}
+          for name, attrs in wanted.items():
+              node = existing.get(name)
+              if node is None:
+                  node = ET.Element("uses-permission")
+                  node.set(android + "name", name)
+                  root.insert(0, node)
+              for key, value in attrs.items():
+                  node.set(android + key, value)
+          tree.write(path, encoding="utf-8", xml_declaration=True)
+          PY
+
+      - name: Build debug APK
+        working-directory: android
+        run: chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Upload CineBox APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CineBox-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
