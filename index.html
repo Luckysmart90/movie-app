@@ -342,31 +342,32 @@ async function loadArchiveFilms(){
   const status = $("#archiveStatus");
   status.textContent = "Searching Internet Archive for films with a listed open licence…";
   try {
-    const query = 'mediatype:movies AND (licenseurl:http*by/4.0* OR licenseurl:http*by-sa/4.0* OR licenseurl:http*by-nc/4.0* OR licenseurl:http*by-nc-sa/4.0* OR licenseurl:http*publicdomain*)';
+    // Search broadly: many Archive film items do not index licenseurl/runtime in Advanced Search.
+    // Validate the actual MP4 file duration and the item's rights metadata below.
+    const query = 'mediatype:movies AND runtime:[3600 TO *]';
     const endpoint = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent(query) +
-      "&fl[]=identifier&fl[]=title&fl[]=year&fl[]=licenseurl&fl[]=runtime&rows=40&page=1&output=json";
+      "&fl[]=identifier&fl[]=title&fl[]=year&fl[]=licenseurl&fl[]=runtime&rows=100&page=1&output=json";
     const response = await fetch(endpoint);
     if (!response.ok) throw new Error("Internet Archive search returned HTTP " + response.status);
     const data = await response.json();
     const docs = data && data.response && Array.isArray(data.response.docs) ? data.response.docs : [];
-    const candidates = docs.filter(d => d.identifier && d.title && d.licenseurl);
-    const metadata = await Promise.all(candidates.slice(0,24).map(async d => {
+    const candidates = docs.filter(d => d.identifier && d.title);
+    const metadata = await Promise.all(candidates.slice(0,60).map(async d => {
       try {
         const r = await fetch("https://archive.org/metadata/" + encodeURIComponent(d.identifier));
         if (!r.ok) return null;
         const m = await r.json();
         const files = Array.isArray(m.files) ? m.files : [];
+        // Check each MP4's own measured duration, not just the item's title or claimed runtime.
         const video = files
           .filter(f => /^.+\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000)
-          .sort((a,b) => Number(b.size || 0) - Number(a.size || 0))[0];
+          .filter(f => archiveRuntimeSeconds(f.length) >= 3600)
+          .sort((a,b) => archiveRuntimeSeconds(b.length) - archiveRuntimeSeconds(a.length))[0];
         if (!video) return null;
-        // Only accept films with an explicit, parseable runtime of at least 60 minutes.
-        // Missing duration metadata is not proof that a file is a full-length movie.
-        // Prefer the selected MP4 file's measured duration; item-level runtime can be uploader-entered.
-        const seconds = archiveRuntimeSeconds(video.length) || archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
-        if (seconds < 3600) return null;
+        const seconds = archiveRuntimeSeconds(video.length);
         const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
-        if (!/creativecommons.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/4\.0|publicdomain/i.test(license)) return null;
+        // Only display items with explicit public-domain or recognized Creative Commons rights metadata.
+        if (!/creativecommons\.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/(1\.0|2\.0|2\.5|3\.0|4\.0)|creativecommons\.org\/publicdomain\/zero\/|creativecommons\.org\/publicdomain\/mark\/|publicdomain/i.test(license)) return null;
         return {
           identifier: d.identifier,
           title: (m.metadata && m.metadata.title) || d.title,
