@@ -61,10 +61,10 @@
   <main id="view-free" class="hidden pb-28 safe-top">
     <div class="px-4 pt-6 pb-3">
       <h2 class="text-2xl font-bold">Free Movies</h2>
-      <p class="text-xs text-white/60 mt-1">Browse individual free feature-film listings and play each official YouTube video inside CineBox.</p>
+      <p class="text-xs text-white/60 mt-1">Find free movie catalogues from services that publish films. Availability and playback depend on each provider.</p>
       <input id="freeSearch" type="search" placeholder="Search free movie titles..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
-      <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading official movie channels…</p>
-      <p class="text-[11px] text-white/40 mt-2">These are official YouTube film listings, not a promise that every title works in every country. YouTube streams cannot be saved to Gallery by CineBox.</p>
+      <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading free movie sources…</p>
+      <p class="text-[11px] text-white/40 mt-2">CineBox does not host these films. We only link to providers; we do not claim every title is free, available in Nigeria, or downloadable.</p>
     </div>
     <div id="freeGrid" class="grid grid-cols-2 gap-3 px-4"></div>
     
@@ -88,7 +88,7 @@
   <div id="modal" class="hidden fixed inset-0 z-50 bg-black">
     <div class="max-w-md mx-auto h-full flex flex-col overflow-y-auto no-scrollbar">
       <div class="flex items-center justify-between p-4 safe-top">
-        <span class="text-sm text-white/60">Now Playing</span>
+        <span class="text-sm text-white/60">Trailer / Preview</span>
         <button id="closeBtn" class="bg-rose-600 hover:bg-rose-500 active:scale-95 transition px-5 py-2 rounded-full font-bold text-sm">✕ Close</button>
       </div>
       <div id="playerBox" class="w-full aspect-video bg-black"></div>
@@ -223,7 +223,7 @@ function renderBanner(){
         <h2 class="text-3xl font-extrabold drop-shadow">${esc(m.title)}</h2>
         <p class="text-xs text-white/70 mt-1">★ ${m.rating ? m.rating.toFixed(1) : "–"} ${m.year ? "· "+m.year : ""}</p>
         <p class="text-sm text-white/80 mt-2 line-clamp-2">${esc(m.overview)}</p>
-        <button data-id="${m.id}" class="open mt-3 bg-white text-black font-bold px-6 py-2.5 rounded-full flex items-center gap-2 active:scale-95 transition">▶ Play</button>
+        <button data-id="${m.id}" class="open mt-3 bg-white text-black font-bold px-6 py-2.5 rounded-full flex items-center gap-2 active:scale-95 transition">▶ Watch trailer</button>
       </div>
     </div>`;
   }).join("");
@@ -287,65 +287,50 @@ function runSearch(){
   }
 }
 
-/* ---------- Curated free feature-film catalogue ---------- */
-/* Film titles and YouTube video IDs are from TVTube's public feature-film listings.
-   Videos remain on their official YouTube players; availability can vary by country. */
-const FREE_MOVIE_CATALOG = [
-  {id:"storybook-christmas",title:"A Storybook Christmas",year:"Feature film",genres:"Romance · Comedy",videoId:"lV1nW_BwoVE",source:"FilmRise Movies"},
-  {id:"adventures-dinotopia",title:"Adventures in Dinotopia",year:"Feature film",genres:"Family · Fantasy",videoId:"fod42CfDmhY",source:"FilmRise Movies"},
-  {id:"american-hero",title:"American Hero",year:"2015",genres:"Action · Comedy",videoId:"B_-1AYf3CLU",source:"FilmRise Movies"},
-  {id:"bang-bang-betty",title:"Bang Bang Betty: Valerie's Revenge",year:"Feature film",genres:"Action · Crime",videoId:"7aC5H4jPiqE",source:"Indie Rights Movies For Free"},
-  {id:"billy-frankenstein",title:"Billy Frankenstein",year:"1998",genres:"Family · Horror",videoId:"n_6Oh8L-VZA",source:"FilmRise Movies"},
-  {id:"blessed-live-laugh-run",title:"Blessed: Live, Laugh, Run!",year:"Feature film",genres:"Horror · Crime",videoId:"E0rLeYVFXYU",source:"Indie Rights Movies For Free"},
-  {id:"charade",title:"Charade",year:"1963",genres:"Mystery · Romance",videoId:"6ROvPFaUl80",source:"FilmRise Movies"},
-  {id:"convict",title:"Convict",year:"2014",genres:"Action · Crime",videoId:"6JLzLZnnO88",source:"Indie Rights Movies For Free"},
-  {id:"cool-dog",title:"Cool Dog",year:"2010",genres:"Family · Comedy",videoId:"vPbyg4TJ7gA",source:"FilmRise Movies"},
-  {id:"deadly-obsession-2",title:"Deadly Obsession 2",year:"Feature film",genres:"Thriller · Drama",videoId:"46E8wrlfeus",source:"Indie Rights Movies For Free"},
-  {id:"demon-fighter",title:"Demon Fighter",year:"Feature film",genres:"Action · Horror",videoId:"zCisPfLpM40",source:"Indie Rights Movies For Free"},
+/* ---------- Free movie sources (no unverified video IDs) ---------- */
+const FREE_MOVIE_SOURCES = [
+  {
+    id: "ng-movies",
+    title: "NG-Movies",
+    category: "Free African movies",
+    description: "Browse Nigerian, Ghanaian and other African films. The service says its catalogue uses YouTube videos supplied by content owners.",
+    note: "Opens the provider's website. Individual video availability can still vary.",
+    url: "https://ng-movies.com/en"
+  },
+  {
+    id: "glo-tv",
+    title: "GLO-TV",
+    category: "Movies on demand",
+    description: "A Nigerian streaming service with Nollywood, Bollywood and Hollywood movie listings for Globacom subscribers.",
+    note: "Sign-in and network eligibility may be required; check any charges shown by the provider.",
+    url: "https://play.google.com/store/apps/details?id=com.tvanywhereafrica.glotv"
+  }
 ];
 function freeCard(m){
-  return '<article class="rounded-xl overflow-hidden bg-white/5 border border-white/10">' +
-    '<button type="button" data-free-id="' + esc(m.id) + '" class="free-open block w-full text-left">' +
-      '<div class="aspect-video bg-black relative">' +
-        '<img loading="lazy" src="https://img.youtube.com/vi/' + encodeURIComponent(m.videoId) + '/hqdefault.jpg" alt="' + esc(m.title) + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">' +
-        '<span class="absolute inset-0 flex items-center justify-center text-4xl drop-shadow">▶</span>' +
-      '</div><div class="p-3"><h3 class="font-bold text-sm leading-snug">' + esc(m.title) + '</h3>' +
-      '<p class="text-[11px] text-emerald-300 mt-1">' + esc(m.year) + ' · ' + esc(m.source) + '</p>' +
-      '<p class="text-[11px] text-white/60 mt-2">' + esc(m.genres) + '</p>' +
-      '<span class="mt-3 block w-full rounded-lg bg-rose-600 py-2 text-sm font-bold text-center">▶ Watch film in CineBox</span>' +
-    '</div></button><p class="px-3 pb-3 text-[10px] text-white/40">Free official YouTube player. Country restrictions may apply; this is not a guaranteed Gallery download.</p></article>';
+  return '<article class="rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">' +
+    '<div class="flex items-start justify-between gap-3">' +
+      '<div><h3 class="font-bold text-base">' + esc(m.title) + '</h3>' +
+      '<p class="text-[11px] text-emerald-300 mt-1">' + esc(m.category) + '</p></div>' +
+      '<span class="text-2xl" aria-hidden="true">🎬</span>' +
+    '</div>' +
+    '<p class="text-sm text-white/70 mt-3 leading-relaxed">' + esc(m.description) + '</p>' +
+    '<p class="text-[11px] text-white/45 mt-2">' + esc(m.note) + '</p>' +
+    '<a href="' + esc(m.url) + '" target="_blank" rel="noopener noreferrer" class="mt-4 block w-full rounded-lg bg-rose-600 py-3 text-sm font-bold text-center">Open official source ↗</a>' +
+    '</article>';
 }
 function renderFreeMovies(){
   const q = ($("#freeSearch").value || "").trim().toLowerCase();
-  const list = FREE_MOVIE_CATALOG.filter(m => !q || (m.title + " " + m.genres + " " + m.source).toLowerCase().includes(q));
+  const list = FREE_MOVIE_SOURCES.filter(m => !q || (m.title + " " + m.category + " " + m.description).toLowerCase().includes(q));
   $("#freeGrid").innerHTML = list.map(freeCard).join("");
   $("#freeStatus").textContent = list.length
-    ? list.length + " film listings. Tap a poster to play that individual film. Some titles may still be blocked by YouTube in your country."
-    : "No matching titles. Try a different movie name or genre.";
+    ? list.length + " movie sources. Open a provider to browse its current catalogue."
+    : "No matching sources. Try searching for African movies or movies on demand.";
 }
 async function loadFreeMovies(){
-  state.freeMovies = FREE_MOVIE_CATALOG;
+  state.freeMovies = FREE_MOVIE_SOURCES;
   state.freeLoaded = true;
   renderFreeMovies();
 }
-function openFreeMovie(id){
-  const m = FREE_MOVIE_CATALOG.find(item => item.id === id);
-  if (!m) return;
-  current = m;
-  $("#mTitle").textContent = m.title;
-  $("#mMeta").textContent = m.year + " · " + m.genres + " · " + m.source;
-  $("#mOverview").textContent = "A free film listing from a movie distributor's YouTube catalogue. Playback depends on the publisher's settings and country availability.";
-  $("#mWatch").classList.add("hidden");
-  $("#videoUrlInput").closest("section").classList.remove("hidden");
-  $("#videoUrlInput").value = "";
-  $("#downloadStatus").textContent = "This film is streaming from YouTube. CineBox cannot save a YouTube stream to Gallery. The download tool below works only with a direct video-file URL that the owner permits you to download.";
-  $("#playerBox").innerHTML = '<iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/' +
-    encodeURIComponent(m.videoId) + '?playsinline=1&rel=0" title="' + esc(m.title) +
-    ' official film player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
-  $("#modal").classList.remove("hidden");
-  document.body.style.overflow = "hidden";
-}
-
 /* ---------- Tabs ---------- */
 function showTab(t){
   ["home","search","watch","free"].forEach(v=>$("#view-"+v).classList.toggle("hidden", v!==t));
