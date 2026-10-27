@@ -61,10 +61,10 @@
   <main id="view-free" class="hidden pb-28 safe-top">
     <div class="px-4 pt-6 pb-3">
       <h2 class="text-2xl font-bold">Free Movies</h2>
-      <p class="text-xs text-white/60 mt-1">Browse official movie distributors with free YouTube uploads. Choose a channel to play its playlist inside CineBox.</p>
+      <p class="text-xs text-white/60 mt-1">Browse individual free feature-film listings and play each official YouTube video inside CineBox.</p>
       <input id="freeSearch" type="search" placeholder="Search free movie titles..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
       <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading official movie channels…</p>
-      <p class="text-[11px] text-white/40 mt-2">Movies are supplied by the official channels. Titles can change, and some videos may not play in every country. YouTube downloads are not provided by CineBox.</p>
+      <p class="text-[11px] text-white/40 mt-2">These are official YouTube film listings, not a promise that every title works in every country. YouTube streams cannot be saved to Gallery by CineBox.</p>
     </div>
     <div id="freeGrid" class="grid grid-cols-2 gap-3 px-4"></div>
     
@@ -98,10 +98,10 @@
         <p id="mOverview" class="text-sm text-white/80 leading-relaxed"></p>
         <button id="mWatch" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-semibold"></button>
         <section class="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
-          <label for="videoUrlInput" class="block text-sm font-semibold">Download a video you own or have permission to save</label>
-          <input id="videoUrlInput" type="url" inputmode="url" placeholder="Paste direct video URL (for example, .mp4)" class="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-rose-500">
+          <label for="videoUrlInput" class="block text-sm font-semibold">Download an authorized direct video file to your phone</label>
+          <input id="videoUrlInput" type="url" inputmode="url" placeholder="Paste direct authorized video file URL (.mp4)" class="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-rose-500">
           <button id="downloadVideoBtn" type="button" class="w-full rounded-xl bg-rose-600 hover:bg-rose-500 py-3 font-bold text-white">⬇ Download to phone</button>
-          <p id="downloadStatus" class="text-xs text-white/60" role="status">In the CineBox Android app, videos are saved to your Gallery in the CineBox album. The website version downloads to Downloads.</p>
+          <p id="downloadStatus" class="text-xs text-white/60" role="status">Gallery downloads require a direct video-file URL that permits downloading. YouTube watch links and streaming pages are not direct video files.</p>
         </section>
       </div>
     </div>
@@ -287,63 +287,62 @@ function runSearch(){
   }
 }
 
-/* ---------- Official free full-movie channels ---------- */
-/* These are official YouTube channels that publish licensed films.
-   The YouTube player stays inside CineBox when embedding is allowed.
-   Individual titles and availability can change by region. */
-const FREE_MOVIE_CHANNELS = [
-  {
-    id: "filmrise",
-    title: "FilmRise Movies",
-    year: "Official movie distributor",
-    genres: "Action · Drama · Thriller · Horror · Romance",
-    playlistId: "UU8IHAQMuiJdY6ALuhG7iU8Q",
-    description: "FilmRise is a film and television distributor. Browse its official uploads and choose a full-length movie in the player. Some uploads may be trailers or other videos."
-  },
-  {
-    id: "moviecentral",
-    title: "Movie Central",
-    year: "Official licensed movie channel",
-    genres: "Action · Sci-Fi · Thriller · Horror · Drama",
-    playlistId: "UUGBzBkV-MinlBvHBzZawfLQ",
-    description: "Movie Central says its films are published under license from copyright holders and distributors. Browse the official playlist and choose a full-length movie. Regional restrictions may apply."
-  }
+/* ---------- Curated free feature-film catalogue ---------- */
+/* Film titles and YouTube video IDs are from TVTube's public feature-film listings.
+   Videos remain on their official YouTube players; availability can vary by country. */
+const FREE_MOVIE_CATALOG = [
+  {id:"storybook-christmas",title:"A Storybook Christmas",year:"Feature film",genres:"Romance · Comedy",videoId:"lV1nW_BwoVE",source:"FilmRise Movies"},
+  {id:"adventures-dinotopia",title:"Adventures in Dinotopia",year:"Feature film",genres:"Family · Fantasy",videoId:"fod42CfDmhY",source:"FilmRise Movies"},
+  {id:"american-hero",title:"American Hero",year:"2015",genres:"Action · Comedy",videoId:"B_-1AYf3CLU",source:"FilmRise Movies"},
+  {id:"bang-bang-betty",title:"Bang Bang Betty: Valerie's Revenge",year:"Feature film",genres:"Action · Crime",videoId:"7aC5H4jPiqE",source:"Indie Rights Movies For Free"},
+  {id:"billy-frankenstein",title:"Billy Frankenstein",year:"1998",genres:"Family · Horror",videoId:"n_6Oh8L-VZA",source:"FilmRise Movies"},
+  {id:"blessed-live-laugh-run",title:"Blessed: Live, Laugh, Run!",year:"Feature film",genres:"Horror · Crime",videoId:"E0rLeYVFXYU",source:"Indie Rights Movies For Free"},
+  {id:"charade",title:"Charade",year:"1963",genres:"Mystery · Romance",videoId:"6ROvPFaUl80",source:"FilmRise Movies"},
+  {id:"convict",title:"Convict",year:"2014",genres:"Action · Crime",videoId:"6JLzLZnnO88",source:"Indie Rights Movies For Free"},
+  {id:"cool-dog",title:"Cool Dog",year:"2010",genres:"Family · Comedy",videoId:"vPbyg4TJ7gA",source:"FilmRise Movies"},
+  {id:"deadly-obsession-2",title:"Deadly Obsession 2",year:"Feature film",genres:"Thriller · Drama",videoId:"46E8wrlfeus",source:"Indie Rights Movies For Free"},
+  {id:"demon-fighter",title:"Demon Fighter",year:"Feature film",genres:"Action · Horror",videoId:"zCisPfLpM40",source:"Indie Rights Movies For Free"},
+  {id:"the-colombian-connection",title:"The Colombian Connection",year:"Feature film",genres:"Action · Crime",videoId:"zCisPfLpM40",source:"Indie Rights Movies For Free"}
 ];
 function freeCard(m){
   return '<article class="rounded-xl overflow-hidden bg-white/5 border border-white/10">' +
-    '<div class="aspect-video bg-gradient-to-br from-rose-950 via-slate-900 to-black flex items-center justify-center">' +
-      '<div class="text-center p-3"><div class="text-4xl">🎬</div><p class="text-xs text-white/60 mt-2">Official YouTube movie channel</p></div></div>' +
-    '<div class="p-3"><h3 class="font-bold text-sm leading-snug">' + esc(m.title) + '</h3>' +
-    '<p class="text-[11px] text-emerald-300 mt-1">' + esc(m.year) + '</p>' +
-    '<p class="text-[11px] text-white/60 mt-2">' + esc(m.genres) + '</p>' +
-    '<button data-free-id="' + esc(m.id) + '" class="free-open mt-3 w-full rounded-lg bg-rose-600 py-2 text-sm font-bold">▶ Browse in CineBox</button>' +
-    '<p class="text-[10px] text-white/40 mt-2">Free to watch where available. YouTube ads or regional limits may apply.</p></div></article>';
+    '<button type="button" data-free-id="' + esc(m.id) + '" class="free-open block w-full text-left">' +
+      '<div class="aspect-video bg-black relative">' +
+        '<img loading="lazy" src="https://img.youtube.com/vi/' + encodeURIComponent(m.videoId) + '/hqdefault.jpg" alt="' + esc(m.title) + '" class="w-full h-full object-cover" onerror="this.style.display=\'none\'">' +
+        '<span class="absolute inset-0 flex items-center justify-center text-4xl drop-shadow">▶</span>' +
+      '</div><div class="p-3"><h3 class="font-bold text-sm leading-snug">' + esc(m.title) + '</h3>' +
+      '<p class="text-[11px] text-emerald-300 mt-1">' + esc(m.year) + ' · ' + esc(m.source) + '</p>' +
+      '<p class="text-[11px] text-white/60 mt-2">' + esc(m.genres) + '</p>' +
+      '<span class="mt-3 block w-full rounded-lg bg-rose-600 py-2 text-sm font-bold text-center">▶ Watch film in CineBox</span>' +
+    '</div></button><p class="px-3 pb-3 text-[10px] text-white/40">Free official YouTube player. Country restrictions may apply; this is not a guaranteed Gallery download.</p></article>';
 }
 function renderFreeMovies(){
   const q = ($("#freeSearch").value || "").trim().toLowerCase();
-  const list = FREE_MOVIE_CHANNELS.filter(m => !q || (m.title + " " + m.genres).toLowerCase().includes(q));
+  const list = FREE_MOVIE_CATALOG.filter(m => !q || (m.title + " " + m.genres + " " + m.source).toLowerCase().includes(q));
   $("#freeGrid").innerHTML = list.map(freeCard).join("");
   $("#freeStatus").textContent = list.length
-    ? "Choose an official channel below. Its YouTube playlist opens inside CineBox."
-    : "No matching channels. Try searching action, drama, thriller, horror, or romance.";
+    ? list.length + " film listings. Tap a poster to play that individual film. Some titles may still be blocked by YouTube in your country."
+    : "No matching titles. Try a different movie name or genre.";
 }
 async function loadFreeMovies(){
-  state.freeMovies = FREE_MOVIE_CHANNELS;
+  state.freeMovies = FREE_MOVIE_CATALOG;
   state.freeLoaded = true;
   renderFreeMovies();
 }
 function openFreeMovie(id){
-  const m = FREE_MOVIE_CHANNELS.find(item => item.id === id);
+  const m = FREE_MOVIE_CATALOG.find(item => item.id === id);
   if (!m) return;
   current = m;
   $("#mTitle").textContent = m.title;
-  $("#mMeta").textContent = m.year + " · " + m.genres;
-  $("#mOverview").textContent = m.description;
+  $("#mMeta").textContent = m.year + " · " + m.genres + " · " + m.source;
+  $("#mOverview").textContent = "A free film listing from a movie distributor's YouTube catalogue. Playback depends on the publisher's settings and country availability.";
   $("#mWatch").classList.add("hidden");
-  $("#videoUrlInput").closest("section").classList.add("hidden");
-  $("#playerBox").innerHTML = '<iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/videoseries?list=' +
-    encodeURIComponent(m.playlistId) + '&amp;playsinline=1&amp;rel=0" title="' + esc(m.title) +
-    ' official movie playlist" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+  $("#videoUrlInput").closest("section").classList.remove("hidden");
+  $("#videoUrlInput").value = "";
+  $("#downloadStatus").textContent = "This film is streaming from YouTube. CineBox cannot save a YouTube stream to Gallery. The download tool below works only with a direct video-file URL that the owner permits you to download.";
+  $("#playerBox").innerHTML = '<iframe class="w-full h-full" src="https://www.youtube-nocookie.com/embed/' +
+    encodeURIComponent(m.videoId) + '?playsinline=1&rel=0" title="' + esc(m.title) +
+    ' official film player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
   $("#modal").classList.remove("hidden");
   document.body.style.overflow = "hidden";
 }
