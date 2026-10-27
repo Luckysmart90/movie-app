@@ -362,7 +362,8 @@ async function loadArchiveFilms(){
         if (!video) return null;
         // Only accept films with an explicit, parseable runtime of at least 60 minutes.
         // Missing duration metadata is not proof that a file is a full-length movie.
-        const seconds = archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
+        // Prefer the selected MP4 file's measured duration; item-level runtime can be uploader-entered.
+        const seconds = archiveRuntimeSeconds(video.length) || archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
         if (seconds < 3600) return null;
         const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
         if (!/creativecommons.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/4\.0|publicdomain/i.test(license)) return null;
