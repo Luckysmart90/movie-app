@@ -22,9 +22,9 @@
         .meta-container { margin: 15px 0; font-size: 14px; color: #aaa; display: flex; gap: 15px; align-items: center; }
         .rating-star { color: #f5c518; font-weight: bold; }
         .download-box { background: #141414; padding: 15px; border-radius: 8px; border: 1px solid #222; margin: 20px 0; text-align: left; }
-        .download-box label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; }
-        .download-box input { width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; }
-        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        .download-box label { font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; }
+        .download-box input { width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px; }
+        .action-btn { background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px; text-align: center; }
         .action-btn.secondary { background-color: #222; border: 1px solid #333; }
         .section-title { font-size: 14px; color: #666; font-weight: bold; text-transform: uppercase; margin: 25px 0 10px 0; text-align: left; }
         .overview-text { color: #bbb; font-size: 14px; line-height: 1.6; text-align: left; margin: 0; }
@@ -55,19 +55,15 @@
             <button class="play-btn-large">▶</button>
         </div>
         <div id="movie-meta-details"></div>
-                <div class="download-box" style="background: #141414; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: left; border: 1px solid #222;">
-            <label style="font-size: 11px; color: #666; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase;">Target Download Link</label>
-            <input type="text" readonly value="https://googleapis.com" style="width: 100%; background: #222; border: 1px solid #333; padding: 10px; color: #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;" />
+        
+        <div class="download-box">
+            <label>Target Download Link</label>
+            <input type="text" readonly value="https://googleapis.com" />
         </div>
-
-        <button class="action-btn" onclick="window.open('https://googleapis.com', '_blank')" style="background-color: #e50914; color: white; border: none; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%; margin-bottom: 10px;">
+        <button class="action-btn" onclick="window.open('https://googleapis.com', '_blank')">
             📥 Download video to Gallery
         </button>
-
-        <button class="action-btn secondary" style="background-color: #222; border: 1px solid #333; color: white; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;">
-            + Watchlist
-        </button>
-        
+        <button class="action-btn secondary">+ Watchlist</button>
     </div>
 
     <div id="search-view" class="view-page">
@@ -93,9 +89,7 @@
 
     <script src="capacitor.js"></script>
     <script src="downloadVideo.js"></script>
-
         <script>
-        // FIXED EXPLICIT LINK DEFINITIONS
         const tmdbBaseUrl = "https://themoviedb.org";
         const tmdbApiKey = "834c382f1f0a996da9e17b8f9a2e379b"; 
         const imageBaseUrl = "https://tmdb.org";
@@ -129,7 +123,7 @@
                 card.className = "movie-card";
                 const posterPath = movie.poster_path ? (imageBaseUrl + movie.poster_path) : "https://placeholder.com";
                 const rawDate = movie.release_date || "N/A";
-                const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
+                const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-') : rawDate;
                 const ratingValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
 
                 card.innerHTML = `
@@ -154,9 +148,8 @@
 
             const displayTitle = movie.title || "Untitled Video";
             const rawDate = movie.release_date || "N/A";
-            const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-')[0] : rawDate;
+            const releaseYear = (rawDate && rawDate.includes('-')) ? rawDate.split('-') : rawDate;
             const scoringValue = movie.vote_average ? Number(movie.vote_average).toFixed(1) : "0.0";
-            const fallbackVideoLink = "https://googleapis.com";
             const storySummary = movie.overview || "No overview available.";
 
             detailsContainer.innerHTML = `
@@ -165,14 +158,6 @@
                     <span>${releaseYear}</span>
                     <span class="rating-star">⭐ ${scoringValue}</span>
                 </div>
-                <div class="download-box">
-                    <label>TARGET DOWNLOAD LINK</label>
-                    <input type="text" readonly value="${fallbackVideoLink}" />
-                </div>
-                <button class="action-btn" onclick="window.downloadMovieNatively('${fallbackVideoLink}', '${displayTitle.replace(/'/g, "\\'")}')">
-                    📥 Download video to Gallery
-                </button>
-                <button class="action-btn secondary">+ Add to Watchlist</button>
                 <div class="section-title">Overview</div>
                 <p class="overview-text">${storySummary}</p>
             `;
