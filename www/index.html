@@ -3,39 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Details Component</title>
+    <title>MovieBox Portal</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #111; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: #222; padding: 20px; border-radius: 10px; }
+        h1 { color: #e50914; }
+        .download-btn { background-color: #e50914; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 20px; width: 100%; }
+    </style>
 </head>
 <body>
-    <!-- Template placeholder for rendering inside your repo layout -->
-    <div id="movie-container"></div>
+    <div class="container">
+        <h1>🎬 MovieBox Portal</h1>
+        <p>Welcome to your movie dashboard container.</p>
+        <div id="movie-content-view">
+            <h3>Sample Movie File</h3>
+            <button class="download-btn" onclick="triggerAppDownload()">📥 Download Video</button>
+        </div>
+    </div>
 
+    <!-- CRITICAL CORE INJECTIONS -->
+    <script src="capacitor.js"></script>
+    <script src="downloadVideo.js"></script>
     <script>
-    // Update the method rendering your active movie layout screen inside your index file.
-    // Ensure you use backticks (`) around the innerHTML block so template variables evaluate correctly.
-    function renderMovieDetails(activeMovie) {
-        const downloadLink = activeMovie.download_url || "https://commondatastorage.googleapis.com";
-        const movieTitle = activeMovie.title || "Unknown Title";
-        const releaseYear = activeMovie.release_date ? activeMovie.release_date.split('-')[0] : 'N/A';
-        const ratingScore = activeMovie.vote_average ? activeMovie.vote_average.toFixed(1) : '0.0';
-
-        document.getElementById("movie-container").innerHTML = `
-            <div class="movie-header">
-                <h2>${movieTitle}</h2>
-                <p>Release Year: ${releaseYear}</p>
-                <p>⭐ ${ratingScore}</p>
-            </div>
-
-            <div class="download-section">
-                <label>TARGET DOWNLOAD LINK</label>
-                <input type="text" readonly value="${downloadLink}" id="download-url-input" />
-                
-                <!-- Explicit string sanitization prevents quotes from breaking native wrapper calls -->
-                <button class="download-btn" onclick="window.downloadMovieNatively('${downloadLink}', '${movieTitle.replace(/'/g, "\\'")}')">
-                    📥 Download video to Gallery
-                </button>
-            </div>
-        `;
-    }
+        function triggerAppDownload() {
+            const targetUrl = "https://googleapis.com";
+            const targetTitle = "Sample_Movie";
+            if (typeof window.downloadMovieNatively === 'function') {
+                window.downloadMovieNatively(targetUrl, targetTitle);
+            } else {
+                alert("Error: downloadVideo.js is missing or inaccessible.");
+            }
+        }
     </script>
 </body>
 </html>
