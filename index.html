@@ -82,11 +82,18 @@
         <div id="mMeta" class="text-sm text-white/60"></div>
         <p id="mOverview" class="text-sm text-white/80 leading-relaxed"></p>
         <button id="mWatch" class="w-full bg-white/10 hover:bg-white/20 py-3 rounded-xl font-semibold"></button>
+        <section class="rounded-xl border border-white/10 bg-white/5 p-3 space-y-2">
+          <label for="videoUrlInput" class="block text-sm font-semibold">Download a video you own or have permission to save</label>
+          <input id="videoUrlInput" type="url" inputmode="url" placeholder="Paste direct video URL (for example, .mp4)" class="w-full rounded-lg bg-black/40 border border-white/15 px-3 py-3 text-sm text-white placeholder-white/40 outline-none focus:border-rose-500">
+          <button id="downloadVideoBtn" type="button" class="w-full rounded-xl bg-rose-600 hover:bg-rose-500 py-3 font-bold text-white">⬇ Download to phone</button>
+          <p id="downloadStatus" class="text-xs text-white/60" role="status">On the website, the file downloads to your phone's Downloads folder. Gallery saving requires the installed Android app.</p>
+        </section>
       </div>
     </div>
   </div>
 </div>
 
+<script src="./downloadVideo.js"></script>
 <script>
 /* =====================================================
    1) PASTE YOUR FREE TMDB API KEY BETWEEN THE QUOTES.
@@ -339,6 +346,32 @@ document.addEventListener("click", e=>{
 });
 $("#closeBtn").addEventListener("click", closeMovie);
 $("#mWatch").addEventListener("click", toggleWatch);
+$("#downloadVideoBtn").addEventListener("click", async () => {
+  const url = $("#videoUrlInput").value.trim();
+  const status = $("#downloadStatus");
+  const button = $("#downloadVideoBtn");
+  if (!url) { alert("Paste a direct video file URL first."); return; }
+  try {
+    const parsed = new URL(url);
+    if (!["http:", "https:"].includes(parsed.protocol)) throw new Error("Please enter a valid http or https video URL.");
+    button.disabled = true;
+    button.textContent = "Preparing download…";
+    status.textContent = "Connecting to the video file…";
+    if (typeof window.downloadVideoToGallery !== "function") throw new Error("The download helper did not load. Refresh the page and try again.");
+    await window.downloadVideoToGallery(url, {
+      fileName: (current && current.title ? current.title.replace(/[^a-z0-9_-]/gi, "_") : "video") + ".mp4",
+      onProgress: p => { status.textContent = "Downloading: " + p.percent + "%"; }
+    });
+    status.textContent = "Download started or completed. Check your phone's Downloads folder.";
+  } catch (err) {
+    const message = err && err.message ? err.message : String(err);
+    status.textContent = message;
+    alert(message + "\n\nSome video hosts block downloads from websites. Use a direct video file URL that permits downloading.");
+  } finally {
+    button.disabled = false;
+    button.textContent = "⬇ Download to phone";
+  }
+});
 $("#searchInput").addEventListener("input", runSearch);
 document.addEventListener("keydown", e=>{ if(e.key==="Escape" && current) closeMovie(); });
 
