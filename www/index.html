@@ -3,36 +3,226 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MovieBox Portal</title>
+    <title>CineBox Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #111; color: #fff; margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; background: #222; padding: 20px; border-radius: 10px; }
-        h1 { color: #e50914; }
-        .download-btn { background-color: #e50914; color: white; border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 20px; width: 100%; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <h1>🎬 MovieBox Portal</h1>
-        <p>Welcome to your movie dashboard container.</p>
-        <div id="movie-content-view">
-            <h3>Sample Movie File</h3>
-            <button class="download-btn" onclick="triggerAppDownload()">📥 Download Video</button>
+<body class="bg-neutral-950 text-white font-sans antialiased select-none">
+
+    <!-- APP CONTAINER -->
+    <div id="app" class="max-w-md mx-auto min-h-screen pb-20 relative bg-neutral-950 shadow-2xl">
+        
+        <!-- TOP APP BAR -->
+        <header class="p-4 flex items-center justify-between sticky top-0 bg-neutral-950/90 backdrop-blur z-40">
+            <h1 class="text-2xl font-black tracking-wider text-red-600">CINEBOX</h1>
+            <div class="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-sm font-bold text-neutral-400">U</div>
+        </header>
+
+        <!-- TAB CONTENT AREA -->
+        <main id="mainContent" class="px-4 space-y-6"></main>
+
+        <!-- BOTTOM NAV BAR -->
+        <nav class="fixed bottom-0 left-0 right-0 bg-neutral-900/95 backdrop-blur border-t border-neutral-800 py-2 max-w-md mx-auto z-40 flex justify-around">
+            <button onclick="switchTab('home')" id="nav-home" class="flex flex-col items-center space-y-1 text-red-500">
+                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"/></svg>
+                <span class="text-xs">Home</span>
+            </button>
+            <button onclick="switchTab('search')" id="nav-search" class="flex flex-col items-center space-y-1 text-neutral-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <span class="text-xs">Search</span>
+            </button>
+            <button onclick="switchTab('watchlist')" id="nav-watchlist" class="flex flex-col items-center space-y-1 text-neutral-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                <span class="text-xs">Watchlist</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- PLAYER & DETAILS MODAL -->
+    <div id="modal" class="hidden fixed inset-0 bg-black z-50 overflow-y-auto max-w-md mx-auto">
+        <div class="relative w-full pb-4">
+            <!-- VIDEO CONTAINER -->
+            <div id="playerBox" class="w-full aspect-video bg-neutral-900 sticky top-0 z-50"></div>
+            
+            <!-- BACK BUTTON -->
+            <button onclick="closePlayer()" class="absolute top-3 left-3 bg-black/60 text-white rounded-full p-2 z-50 backdrop-blur">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+
+            <!-- DETAILS PANEL -->
+            <div class="p-4 space-y-4 mt-2">
+                <h2 id="mTitle" class="text-2xl font-bold tracking-tight"></h2>
+                <div id="mMeta" class="text-xs text-neutral-400 flex items-center space-x-3"></div>
+                
+                <!-- AUTOMATED URL FIELD -->
+                <div class="space-y-1 bg-neutral-900 p-3 rounded-xl border border-neutral-800">
+                    <label class="text-[11px] font-bold text-neutral-400 uppercase tracking-wider">Target Download Link</label>
+                    <input type="text" id="videoUrlInput" readonly class="w-full bg-neutral-950 text-xs border border-neutral-800 rounded px-2.5 py-2 mt-1 focus:outline-none font-mono text-neutral-400 select-all" placeholder="No direct download source found">
+                </div>
+
+                <!-- DOWNLOAD BUTTON -->
+                <button id="mDownload" class="w-full flex items-center justify-center space-x-2 bg-red-600 text-white font-bold py-3.5 rounded-xl active:scale-95 transition shadow-lg shadow-red-900/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Download video to Gallery</span>
+                </button>
+
+                <button id="mWatchlistBtn" class="w-full bg-neutral-900 border border-neutral-800 text-neutral-300 py-2.5 rounded-lg text-sm font-semibold active:scale-95 transition"></button>
+                
+                <div class="space-y-1">
+                    <h3 class="text-sm font-bold text-neutral-400 uppercase tracking-wider">Overview</h3>
+                    <p id="mOverview" class="text-sm text-neutral-300 leading-relaxed"></p>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- CRITICAL CORE INJECTIONS -->
-    <script src="capacitor.js"></script>
+    <!-- LINK THE EXTERNAL CAPACITOR DOWNLOAD SCRIPT -->
     <script src="downloadVideo.js"></script>
+
+    <!-- LOGIC SCRIPT -->
     <script>
-        function triggerAppDownload() {
-            const targetUrl = "https://googleapis.com";
-            const targetTitle = "Sample_Movie";
-            if (typeof window.downloadMovieNatively === 'function') {
-                window.downloadMovieNatively(targetUrl, targetTitle);
-            } else {
-                alert("Error: downloadVideo.js is missing or inaccessible.");
+        // 🔑 PASTE YOUR TMDB API KEY HERE
+        const TMDB_API_KEY = "d92b845650cf344112328660a74743d0";
+
+        // 🎬 YOUR LINK LIBRARY MAPPING (Connect TMDB ID numbers to direct downloadable movie links)
+        const MOVIE_DATABASE_LINKS = {
+            "default": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+        };
+
+        const TMDB = "https://api.themoviedb.org/3";
+        const IMG = "https://image.tmdb.org/t/p/w342";
+        const IMG_BIG = "https://image.tmdb.org/t/p/w780";
+
+        let currentTab = 'home';
+        let activeMovie = null;
+        let watchlist = JSON.parse(localStorage.getItem('cinebox_watchlist')) || [];
+
+        window.addEventListener('DOMContentLoaded', () => { switchTab('home'); });
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-red-500', 'text-neutral-400'));
+            document.getElementById(`nav-${tab}`).classList.replace('text-neutral-400', 'text-red-500');
+            const main = document.getElementById('mainContent');
+            main.innerHTML = '';
+            if (tab === 'home') renderHomeTab();
+            if (tab === 'search') renderSearchTab();
+            if (tab === 'watchlist') renderWatchlistTab();
+        }
+
+        async function fetchMovies(endpoint) {
+            try {
+                const res = await fetch(`${TMDB}${endpoint}${endpoint.includes('?') ? '&' : '?'}api_key=${TMDB_API_KEY}`);
+                const data = await res.json();
+                return data.results || [];
+            } catch (e) { return []; }
+        }
+
+        async function renderHomeTab() {
+            const main = document.getElementById('mainContent');
+            const trending = await fetchMovies('/trending/movie/day');
+            if (trending.length > 0) {
+                const feat = trending[0];
+                const banner = document.createElement('div');
+                banner.className = "w-full aspect-[4/5] rounded-2xl relative overflow-hidden bg-neutral-900 shadow-xl cursor-pointer";
+                banner.onclick = () => openPlayer(feat.id);
+                banner.innerHTML = `
+                    <img src="${IMG_BIG}${feat.poster_path}" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent flex flex-col justify-end p-6 space-y-2">
+                        <h2 class="text-3xl font-black tracking-tight leading-none">${feat.title}</h2>
+                        <p class="text-xs text-neutral-400 font-medium">⭐ ${feat.vote_average.toFixed(1)}</p>
+                    </div>
+                `;
+                main.appendChild(banner);
             }
+
+            const categories = [
+                { name: 'Popular Picks', endpoint: '/movie/popular' },
+                { name: 'Action Thrillers', endpoint: '/discover/movie?with_genres=28' }
+            ];
+
+            for (let cat of categories) {
+                const movies = await fetchMovies(cat.endpoint);
+                const row = document.createElement('div');
+                row.className = "space-y-2";
+                row.innerHTML = `<h3 class="text-lg font-bold text-neutral-200">${cat.name}</h3>`;
+                const scroller = document.createElement('div');
+                scroller.className = "flex space-x-3 overflow-x-auto no-scrollbar pb-2";
+                movies.forEach(m => {
+                    if(!m.poster_path) return;
+                    const card = document.createElement('div');
+                    card.className = "flex-none w-28 cursor-pointer";
+                    card.onclick = () => openPlayer(m.id);
+                    card.innerHTML = `<div class="w-full h-40 rounded-lg overflow-hidden"><img src="${IMG}${m.poster_path}" class="w-full h-full object-cover"></div>`;
+                    scroller.appendChild(card);
+                });
+                row.appendChild(scroller);
+                main.appendChild(row);
+            }
+        }
+
+        async function openPlayer(movieId) {
+            try {
+                const res = await fetch(`${TMDB}/movie/${movieId}?api_key=${TMDB_API_KEY}&append_to_response=videos`);
+                activeMovie = await res.json();
+                
+                document.getElementById('mTitle').innerText = activeMovie.title;
+                document.getElementById('mOverview').innerText = activeMovie.overview || "No overview available.";
+                document.getElementById('mMeta').innerHTML = `<span>\${activeMovie.release_date ? activeMovie.release_date.split('-')[0] : 'N/A'}</span> • <span>⭐ \${activeMovie.vote_average.toFixed(1)}</span>`;
+
+                // Auto-fill download input from local library config mapping
+                const urlInput = document.getElementById('videoUrlInput');
+                urlInput.value = MOVIE_DATABASE_LINKS[movieId] || MOVIE_DATABASE_LINKS["default"];
+
+                const videoBox = document.getElementById('playerBox');
+                const videos = activeMovie.videos?.results || [];
+                const trailer = videos.find(v => v.type === 'Trailer' && v.site === 'YouTube');
+                if (trailer) {
+                    videoBox.innerHTML = `<iframe src="https://www.youtube.com/embed/\${trailer.key}?autoplay=1" class="w-full h-full" allow="autoplay" allowfullscreen></iframe>`;
+                } else {
+                    videoBox.innerHTML = `<div class="w-full h-full flex items-center justify-center text-neutral-500 text-xs">Preview Clip Unavailable</div>`;
+                }
+
+                // Download operation call wrapper
+                document.getElementById('mDownload').onclick = () => {
+                    const downloadUrl = document.getElementById('videoUrlInput').value.trim();
+                    if(typeof window.downloadMovieNatively === 'function') {
+                        window.downloadMovieNatively(downloadUrl, activeMovie.title);
+                    } else {
+                        alert("Download engine script is missing or unlinked.");
+                    }
+                };
+
+                updateWatchlistBtn();
+                document.getElementById('modal').classList.remove('hidden');
+            } catch(e) {}
+        }
+
+        function closePlayer() {
+            document.getElementById('playerBox').innerHTML = '';
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function updateWatchlistBtn() {
+            const btn = document.getElementById('mWatchlistBtn');
+            const isAdded = watchlist.some(m => m.id === activeMovie.id);
+            btn.innerText = isAdded ? "✓ Added to Watchlist" : "+ Add to Watchlist";
+            btn.onclick = isAdded ? removeFromWatchlist : addToWatchlist;
+        }
+
+        function addToWatchlist() {
+            watchlist.push({ id: activeMovie.id, title: activeMovie.title, poster_path: activeMovie.poster_path });
+            localStorage.setItem('cinebox_watchlist', JSON.stringify(watchlist));
+            updateWatchlistBtn();
+        }
+
+        function removeFromWatchlist() {
+            watchlist = watchlist.filter(m => m.id !== activeMovie.id);
+            localStorage.setItem('cinebox_watchlist', JSON.stringify(watchlist));
+            updateWatchlistBtn();
         }
     </script>
 </body>
