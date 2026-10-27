@@ -1,30 +1,24 @@
-// downloadVideo.js - Corrected Capacitor Downloader Wrapper
+// downloadVideo.js - Capacitor Downloader Wrapper
 async function downloadMovieNatively(targetUrl, fileTitle) {
-    // 1. Check if the code is running inside a compiled mobile application container
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins.Filesystem) {
-        alert("Gallery storage access requires compiling this framework inside a native Android APK build container.");
+        alert("Mobile system storage access requires compiling this framework inside a native Android container shell.");
         return;
     }
 
-    const { Filesystem, Http, Toast } = Capacitor.Plugins;
+    const { Http, Toast } = Capacitor.Plugins;
 
     try {
-        // Prevent broken template string code leakage from making real native HTTP calls
-        if (!targetUrl || targetUrl.trim() === "" || targetUrl.startsWith("${") || targetUrl.includes("${")) {
-            alert("Error: Invalid, unparsed, or corrupt download link.");
+        if (!targetUrl || targetUrl.trim() === "") {
+            alert("Error: Missing target video URL destination.");
             return;
         }
 
         if (Toast) {
-            await Toast.show({ text: `Downloading ${fileTitle || 'Video'} to your library...` });
+            await Toast.show({ text: `Initializing download for: ${fileTitle}...` });
         }
         
-        // Clean special characters out of the title to keep the filename format safe
-        const cleanTitle = fileTitle ? fileTitle : "movie_" + Date.now();
-        const safeName = cleanTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".mp4";
+        const safeName = fileTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".mp4";
         
-        // Use 'Documents' as the target directory. It has the cleanest operational 
-        // read/write runtime stability without causing sandboxed permission crashes on Android.
         await Http.downloadFile({
             url: targetUrl,
             filePath: safeName,
@@ -32,15 +26,14 @@ async function downloadMovieNatively(targetUrl, fileTitle) {
         });
 
         if (Toast) {
-            await Toast.show({ text: "Success! Video saved safely to your Documents directory." });
+            await Toast.show({ text: "Success! Video saved to Documents folder." });
         } else {
-            alert("Download complete! File saved successfully.");
+            alert("Download completed cleanly.");
         }
     } catch (err) {
-        console.error("Native file transfer failure:", err);
-        alert("Download execution failed. Please verify source configurations or network configurations.");
+        console.error("Critical native file pipeline layout breakdown:", err);
+        alert("Download task execution failed. Check network or storage configurations.");
     }
 }
 
-// Attach to the global web window instance so index.html can trigger it natively
 window.downloadMovieNatively = downloadMovieNatively;
