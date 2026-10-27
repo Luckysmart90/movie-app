@@ -34,6 +34,9 @@ jobs:
             npx cap add android
           fi
 
+      - name: Include the native Gallery plugin bridge for the single-file app
+        run: cp node_modules/@capacitor-community/media/dist/plugin.js www/media-plugin.js
+
       - name: Sync Capacitor
         run: npx cap sync android
 
