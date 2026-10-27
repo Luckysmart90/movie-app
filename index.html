@@ -362,7 +362,7 @@ async function loadArchiveFilms(){
         const files = Array.isArray(m.files) ? m.files : [];
         const itemRuntime = archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
         const videos = files
-          .filter(f => /^.+\\.mp4$/i.test(f.name || "") && !/_thumb|_preview/i.test(f.name || "") && Number(f.size || 0) > 5000000)
+          .filter(f => /^.+\.mp4$/i.test(f.name || "") && !/_thumb|_preview/i.test(f.name || "") && Number(f.size || 0) > 5000000)
           .map(f => ({...f, seconds: archiveRuntimeSeconds(f.length) || itemRuntime}))
           .filter(f => f.seconds >= 3600)
           .sort((a,b) => b.seconds - a.seconds);
@@ -374,7 +374,7 @@ async function loadArchiveFilms(){
         const description = String(meta.description || "");
         // Only auto-list entries whose uploader explicitly marks a recognized CC or public-domain status.
         // The source's rights page remains authoritative; Archive cannot guarantee uploader claims.
-        const openLicense = /creativecommons\\.org\\/licenses\\/(by|by-sa|by-nc|by-nc-sa|by-nc-nd)\\/(1\\.0|2\\.0|2\\.5|3\\.0|4\\.0)|creativecommons\\.org\\/publicdomain\\/(zero|mark)\\//i.test(license);
+        const openLicense = /creativecommons\.org\/licenses\/(by|by-sa|by-nc|by-nc-sa|by-nc-nd)\/(1\.0|2\.0|2\.5|3\.0|4\.0)|creativecommons\.org\/publicdomain\/(zero|mark)\//i.test(license);
         const publicDomainClaim = /public domain|public-domain|copyright has expired|no known copyright restrictions/i.test(rights + " " + description);
         if (!openLicense && !publicDomainClaim) return null;
         return {
