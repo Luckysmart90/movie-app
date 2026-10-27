@@ -61,7 +61,7 @@
   <main id="view-free" class="hidden pb-28 safe-top">
     <div class="px-4 pt-6 pb-3">
       <h2 class="text-2xl font-bold">Free Movies</h2>
-      <p class="text-xs text-white/60 mt-1">Watch and save films with Creative Commons license information from Internet Archive.</p>
+      <p class="text-xs text-white/60 mt-1">Browse feature-length entertainment films available free from Internet Archive. Availability and licenses vary by title.</p>
       <input id="freeSearch" type="search" placeholder="Search free movie titles..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
       <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading free movies…</p>
       <p class="text-[11px] text-white/40 mt-2">Check each film's license and details on Internet Archive before reusing or sharing it.</p>
@@ -313,7 +313,7 @@ async function loadFreeMovies(){
   status.textContent = "Finding films with Creative Commons license information…";
   try {
     const params = new URLSearchParams();
-    params.set("q", "mediatype:movies AND licenseurl:*creativecommons.org*");
+    params.set("q", "mediatype:movies AND collection:feature_films AND licenseurl:*creativecommons.org*");
     params.set("rows", "24"); params.set("page", "1"); params.set("output", "json");
     ["identifier","title","year","licenseurl"].forEach(field => params.append("fl[]", field));
     params.append("sort[]", "downloads desc");
