@@ -327,7 +327,7 @@ function archiveRuntimeSeconds(value){
   if (value == null || value === "") return 0;
   if (typeof value === "number") return value > 1000 ? value : 0;
   const s = String(value).trim();
-  if (/^\\d+(\\.\\d+)?$/.test(s)) return Number(s) > 1000 ? Number(s) : 0;
+  if (/^\d+(\.\d+)?$/.test(s)) return Number(s) > 1000 ? Number(s) : 0;
   const parts = s.split(":").map(Number);
   if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0]*3600+parts[1]*60+parts[2];
   if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0]*60+parts[1];
@@ -353,12 +353,12 @@ async function loadArchiveFilms(){
         if (!r.ok) return null;
         const m = await r.json();
         const files = Array.isArray(m.files) ? m.files : [];
-        const video = files.find(f => /^.+\\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000);
+        const video = files.find(f => /^.+\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000);
         if (!video) return null;
         const seconds = archiveRuntimeSeconds((m.metadata && (m.metadata.runtime || m.metadata.length)) || d.runtime);
         if (seconds && seconds < 3600) return null;
         const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
-        if (!/creativecommons.org\\/licenses\\/(by|by-sa|by-nc|by-nc-sa)\\/4\\.0|publicdomain/i.test(license)) return null;
+        if (!/creativecommons.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/4\.0|publicdomain/i.test(license)) return null;
         return {
           identifier: d.identifier,
           title: (m.metadata && m.metadata.title) || d.title,
