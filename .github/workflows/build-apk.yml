@@ -53,8 +53,9 @@ jobs:
           wanted = {
               "android.permission.INTERNET": {},
               "android.permission.READ_MEDIA_VIDEO": {},
-              "android.permission.READ_EXTERNAL_STORAGE": {"maxSdkVersion": "32"},
-              "android.permission.WRITE_EXTERNAL_STORAGE": {"maxSdkVersion": "29"},
+              "android.permission.READ_MEDIA_IMAGES": {},
+              "android.permission.READ_EXTERNAL_STORAGE": {},
+              "android.permission.WRITE_EXTERNAL_STORAGE": {},
           }
           existing = {node.get(android + "name"): node for node in root.findall("uses-permission")}
           for name, attrs in wanted.items():
