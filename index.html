@@ -61,8 +61,8 @@
   <main id="view-free" class="hidden pb-28 safe-top">
     <div class="px-4 pt-6 pb-3">
       <h2 class="text-2xl font-bold">Free Movies</h2>
-      <p class="text-xs text-white/60 mt-1">Find free movie catalogues from services that publish films. Availability and playback depend on each provider.</p>
-      <input id="freeSearch" type="search" placeholder="Search free movie titles..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
+      <p class="text-xs text-white/60 mt-1">Explore Hollywood, British, Indian, African and other international movies through official streaming providers.</p>
+      <input id="freeSearch" type="search" placeholder="Search providers or movie categories..." autocomplete="off" class="mt-4 w-full rounded-xl bg-white/10 border border-white/10 px-3 py-3 text-sm outline-none focus:border-rose-500">
       <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading free movie sources…</p>
       <p class="text-[11px] text-white/40 mt-2">CineBox does not host these films. We only link to providers; we do not claim every title is free, available in Nigeria, or downloadable.</p>
     </div>
@@ -298,10 +298,18 @@ const FREE_MOVIE_SOURCES = [
     url: "https://ng-movies.com/en"
   },
   {
+    id: "plex",
+    title: "Plex — Free Movies & Shows",
+    category: "Hollywood and international movies",
+    description: "A free, ad-supported catalogue with studio films, independent movies and international titles. The available titles can change by country.",
+    note: "Opens Plex to stream there, not inside CineBox. Free Plex movies cannot be downloaded for offline viewing.",
+    url: "https://watch.plex.tv/"
+  },
+  {
     id: "glo-tv",
     title: "GLO-TV",
-    category: "Movies on demand",
-    description: "A Nigerian streaming service with Nollywood, Bollywood and Hollywood movie listings for Globacom subscribers.",
+    category: "Nollywood, Bollywood and Hollywood listings",
+    description: "A Nigerian streaming service with a range of movie categories for eligible Globacom subscribers.",
     note: "Sign-in and network eligibility may be required; check any charges shown by the provider.",
     url: "https://play.google.com/store/apps/details?id=com.tvanywhereafrica.glotv"
   }
@@ -324,7 +332,7 @@ function renderFreeMovies(){
   $("#freeGrid").innerHTML = list.map(freeCard).join("");
   $("#freeStatus").textContent = list.length
     ? list.length + " movie sources. Open a provider to browse its current catalogue."
-    : "No matching sources. Try searching for African movies or movies on demand.";
+    : "No matching providers. Try Hollywood, international, African or Indian.";
 }
 async function loadFreeMovies(){
   state.freeMovies = FREE_MOVIE_SOURCES;
