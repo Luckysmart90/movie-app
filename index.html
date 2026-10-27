@@ -340,50 +340,60 @@ async function loadArchiveFilms(){
   if (archiveLoadStarted) return;
   archiveLoadStarted = true;
   const status = $("#archiveStatus");
-  status.textContent = "Searching Internet Archive for films with a listed open licence…";
+  status.textContent = "Searching Internet Archive for full-length films…";
   try {
-    // Search broadly: many Archive film items do not index licenseurl/runtime in Advanced Search.
-    // Validate the actual MP4 file duration and the item's rights metadata below.
-    const query = 'mediatype:movies AND runtime:[3600 TO *]';
+    // Do NOT range-filter runtime in the Archive search query: runtime is often indexed
+    // as HH:MM:SS text, so a numeric range can incorrectly return zero items.
+    // Search items that have runtime metadata, then verify the actual MP4 duration below.
+    const query = 'mediatype:movies AND runtime:*';
     const endpoint = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent(query) +
-      "&fl[]=identifier&fl[]=title&fl[]=year&fl[]=licenseurl&fl[]=runtime&rows=100&page=1&output=json";
+      "&fl[]=identifier&fl[]=title&fl[]=year&fl[]=date&fl[]=licenseurl&fl[]=runtime&fl[]=downloads&rows=100&page=1&output=json&sort[]=downloads+desc";
     const response = await fetch(endpoint);
     if (!response.ok) throw new Error("Internet Archive search returned HTTP " + response.status);
     const data = await response.json();
     const docs = data && data.response && Array.isArray(data.response.docs) ? data.response.docs : [];
     const candidates = docs.filter(d => d.identifier && d.title);
-    const metadata = await Promise.all(candidates.slice(0,60).map(async d => {
+    status.textContent = "Checking video files and rights for " + candidates.length + " Archive entries…";
+    const metadata = await Promise.all(candidates.slice(0,80).map(async d => {
       try {
         const r = await fetch("https://archive.org/metadata/" + encodeURIComponent(d.identifier));
         if (!r.ok) return null;
         const m = await r.json();
         const files = Array.isArray(m.files) ? m.files : [];
-        // Check each MP4's own measured duration, not just the item's title or claimed runtime.
-        const video = files
-          .filter(f => /^.+\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000)
-          .filter(f => archiveRuntimeSeconds(f.length) >= 3600)
-          .sort((a,b) => archiveRuntimeSeconds(b.length) - archiveRuntimeSeconds(a.length))[0];
+        const itemRuntime = archiveRuntimeSeconds((m.metadata && m.metadata.runtime) || d.runtime);
+        const videos = files
+          .filter(f => /^.+\\.mp4$/i.test(f.name || "") && !/_thumb|_preview/i.test(f.name || "") && Number(f.size || 0) > 5000000)
+          .map(f => ({...f, seconds: archiveRuntimeSeconds(f.length) || itemRuntime}))
+          .filter(f => f.seconds >= 3600)
+          .sort((a,b) => b.seconds - a.seconds);
+        const video = videos[0];
         if (!video) return null;
-        const seconds = archiveRuntimeSeconds(video.length);
-        const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
-        // Only display items with explicit public-domain or recognized Creative Commons rights metadata.
-        if (!/creativecommons\.org\/licenses\/(by|by-sa|by-nc|by-nc-sa)\/(1\.0|2\.0|2\.5|3\.0|4\.0)|creativecommons\.org\/publicdomain\/zero\/|creativecommons\.org\/publicdomain\/mark\/|publicdomain/i.test(license)) return null;
+        const meta = m.metadata || {};
+        const license = String(meta.licenseurl || d.licenseurl || "");
+        const rights = String(meta.rights || "");
+        const description = String(meta.description || "");
+        // Only auto-list entries whose uploader explicitly marks a recognized CC or public-domain status.
+        // The source's rights page remains authoritative; Archive cannot guarantee uploader claims.
+        const openLicense = /creativecommons\\.org\\/licenses\\/(by|by-sa|by-nc|by-nc-sa|by-nc-nd)\\/(1\\.0|2\\.0|2\\.5|3\\.0|4\\.0)|creativecommons\\.org\\/publicdomain\\/(zero|mark)\\//i.test(license);
+        const publicDomainClaim = /public domain|public-domain|copyright has expired|no known copyright restrictions/i.test(rights + " " + description);
+        if (!openLicense && !publicDomainClaim) return null;
         return {
           identifier: d.identifier,
-          title: (m.metadata && m.metadata.title) || d.title,
-          year: (m.metadata && (m.metadata.year || m.metadata.date)) || d.year || "",
-          license,
+          title: meta.title || d.title,
+          year: meta.year || meta.date || d.year || d.date || "",
+          license: license || "Public-domain claim in item metadata",
           fileName: video.name,
-          url: "https://archive.org/download/" + encodeURIComponent(d.identifier) + "/" + video.name
+          url: "https://archive.org/download/" + encodeURIComponent(d.identifier) + "/" + encodeURIComponent(video.name)
         };
       } catch(e) { return null; }
     }));
     archiveFilms = metadata.filter(Boolean);
     renderArchiveFilms();
     status.textContent = archiveFilms.length
-      ? archiveFilms.length + " films with a listed runtime of at least 60 minutes and an open licence claimed by the uploader. Check each source rights page."
-      : "No matching full-length MP4 films were found right now. Try again later or browse Internet Archive directly.";
+      ? archiveFilms.length + " full-length video files found with an explicit open-license/public-domain claim. Please check the source rights page for each title."
+      : "No entries passed the full-length video and rights checks in this search batch. The Archive search query was corrected; more pages or a broader rights review may be needed.";
   } catch (e) {
+    console.error("CineBox Archive catalogue:", e);
     status.textContent = "Could not load the film catalogue right now. Check your connection or open Internet Archive directly below.";
   }
 }
