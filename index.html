@@ -66,7 +66,13 @@
       <p id="freeStatus" class="text-sm text-white/60 mt-3" role="status">Loading free movie sources…</p>
       <p class="text-[11px] text-white/40 mt-2">CineBox does not host these films. We only link to providers; we do not claim every title is free, available in Nigeria, or downloadable.</p>
     </div>
-    <div id="freeGrid" class="grid grid-cols-2 gap-3 px-4"></div>
+    <section class="px-4 mt-5">
+      <h3 class="text-lg font-bold">Full-Length Movies</h3>
+      <p class="text-xs text-white/50 mt-1">Open-licensed films from Internet Archive. These are separate from the commercial titles above; availability and rights details are shown by the source.</p>
+      <p id="archiveStatus" class="text-sm text-white/60 mt-3" role="status">Loading downloadable full-length films…</p>
+      <div id="archiveGrid" class="grid grid-cols-1 gap-3 mt-3"></div>
+    </section>
+    <div id="freeGrid" class="grid grid-cols-2 gap-3 px-4 mt-5"></div>
     
   </main>
 
@@ -314,6 +320,111 @@ const FREE_MOVIE_SOURCES = [
     url: "https://play.google.com/store/apps/details?id=com.tvanywhereafrica.glotv"
   }
 ];
+/* ---------- Full-length open-licensed films from Internet Archive ---------- */
+let archiveFilms = [];
+let archiveLoadStarted = false;
+function archiveRuntimeSeconds(value){
+  if (value == null || value === "") return 0;
+  if (typeof value === "number") return value > 1000 ? value : 0;
+  const s = String(value).trim();
+  if (/^\\d+(\\.\\d+)?$/.test(s)) return Number(s) > 1000 ? Number(s) : 0;
+  const parts = s.split(":").map(Number);
+  if (parts.length === 3 && parts.every(Number.isFinite)) return parts[0]*3600+parts[1]*60+parts[2];
+  if (parts.length === 2 && parts.every(Number.isFinite)) return parts[0]*60+parts[1];
+  return 0;
+}
+async function loadArchiveFilms(){
+  if (archiveLoadStarted) return;
+  archiveLoadStarted = true;
+  const status = $("#archiveStatus");
+  status.textContent = "Searching Internet Archive for films with a listed open licence…";
+  try {
+    const query = 'mediatype:movies AND (licenseurl:http*by/4.0* OR licenseurl:http*by-sa/4.0* OR licenseurl:http*by-nc/4.0* OR licenseurl:http*by-nc-sa/4.0* OR licenseurl:http*publicdomain*)';
+    const endpoint = "https://archive.org/advancedsearch.php?q=" + encodeURIComponent(query) +
+      "&fl[]=identifier&fl[]=title&fl[]=year&fl[]=licenseurl&fl[]=runtime&rows=40&page=1&output=json";
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error("Internet Archive search returned HTTP " + response.status);
+    const data = await response.json();
+    const docs = data && data.response && Array.isArray(data.response.docs) ? data.response.docs : [];
+    const candidates = docs.filter(d => d.identifier && d.title && d.licenseurl);
+    const metadata = await Promise.all(candidates.slice(0,24).map(async d => {
+      try {
+        const r = await fetch("https://archive.org/metadata/" + encodeURIComponent(d.identifier));
+        if (!r.ok) return null;
+        const m = await r.json();
+        const files = Array.isArray(m.files) ? m.files : [];
+        const video = files.find(f => /^.+\\.mp4$/i.test(f.name || "") && !f.name.includes("_thumb") && Number(f.size || 0) > 5000000);
+        if (!video) return null;
+        const seconds = archiveRuntimeSeconds((m.metadata && (m.metadata.runtime || m.metadata.length)) || d.runtime);
+        if (seconds && seconds < 3600) return null;
+        const license = (m.metadata && m.metadata.licenseurl) || d.licenseurl || "";
+        if (!/creativecommons.org\\/licenses\\/(by|by-sa|by-nc|by-nc-sa)\\/4\\.0|publicdomain/i.test(license)) return null;
+        return {
+          identifier: d.identifier,
+          title: (m.metadata && m.metadata.title) || d.title,
+          year: (m.metadata && (m.metadata.year || m.metadata.date)) || d.year || "",
+          license,
+          fileName: video.name,
+          url: "https://archive.org/download/" + encodeURIComponent(d.identifier) + "/" + video.name
+        };
+      } catch(e) { return null; }
+    }));
+    archiveFilms = metadata.filter(Boolean);
+    renderArchiveFilms();
+    status.textContent = archiveFilms.length
+      ? archiveFilms.length + " full-length MP4 films found with an open licence listed by the uploader. Check the source rights page for each film."
+      : "No matching full-length MP4 films were found right now. Try again later or browse Internet Archive directly.";
+  } catch (e) {
+    status.textContent = "Could not load the film catalogue right now. Check your connection or open Internet Archive directly below.";
+  }
+}
+function renderArchiveFilms(){
+  const q = ($("#freeSearch").value || "").trim().toLowerCase();
+  const list = archiveFilms.filter(m => !q || (m.title + " " + m.year).toLowerCase().includes(q));
+  $("#archiveGrid").innerHTML = list.map(m => `
+    <article class="rounded-xl border border-white/10 bg-white/5 p-3">
+      <h4 class="font-semibold">${esc(m.title)}</h4>
+      <p class="text-xs text-white/50 mt-1">${esc(String(m.year).slice(0,4))} · Full-length MP4 · Open licence listed</p>
+      <div class="grid grid-cols-2 gap-2 mt-3">
+        <button type="button" class="archive-play rounded-lg bg-white/10 py-2.5 text-sm font-bold" data-archive-id="${esc(m.identifier)}">▶ Watch full movie</button>
+        <button type="button" class="archive-download rounded-lg bg-rose-600 py-2.5 text-sm font-bold" data-archive-id="${esc(m.identifier)}">⬇ Download</button>
+      </div>
+      <a class="block text-xs text-white/50 underline mt-3" href="https://archive.org/details/${encodeURIComponent(m.identifier)}" target="_blank" rel="noopener noreferrer">Check film details and rights ↗</a>
+    </article>`).join("");
+}
+function findArchiveFilm(id){ return archiveFilms.find(m => m.identifier === id); }
+async function playArchiveFilm(id){
+  const film = findArchiveFilm(id);
+  if (!film) return;
+  current = { id: "archive:" + film.identifier, title: film.title, year: String(film.year || "").slice(0,4), rating: 0, genres: [], overview: "Full-length film hosted by Internet Archive. Review the source rights and details before use.", fullUrl: film.url };
+  $("#mTitle").textContent = film.title;
+  $("#mMeta").textContent = (current.year || "") + " · Full-length film";
+  $("#mOverview").textContent = current.overview;
+  $("#mWatch").classList.add("hidden");
+  $("#videoUrlInput").closest("section").classList.add("hidden");
+  $("#modal").classList.remove("hidden");
+  document.body.style.overflow = "hidden";
+  $("#playerBox").innerHTML = '<video class="w-full h-full" controls autoplay playsinline style="background:#000" src="' + esc(film.url) + '">Your browser does not support this video. <a href="' + esc(film.url) + '">Open video file</a></video>';
+}
+async function downloadArchiveFilm(id, button){
+  const film = findArchiveFilm(id);
+  if (!film) return;
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = "Preparing…";
+  try {
+    if (typeof window.downloadVideoToGallery !== "function") throw new Error("The download helper is not available. Refresh and try again.");
+    const result = await window.downloadVideoToGallery(film.url, {fileName: film.title.replace(/[^a-z0-9_-]/gi, "_") + ".mp4"});
+    button.textContent = result && result.location === "Gallery" ? "✓ Saved to Gallery" : "✓ Download started";
+  } catch(e) {
+    alert((e && e.message ? e.message : String(e)) + "\\nOpen the film's Internet Archive page to check its download options.");
+    button.textContent = original;
+  } finally {
+    button.disabled = false;
+    if (button.textContent === "Preparing…") button.textContent = original;
+  }
+}
+
 function freeCard(m){
   return '<article class="rounded-xl overflow-hidden bg-white/5 border border-white/10 p-4">' +
     '<div class="flex items-start justify-between gap-3">' +
@@ -328,6 +439,7 @@ function freeCard(m){
 }
 function renderFreeMovies(){
   const q = ($("#freeSearch").value || "").trim().toLowerCase();
+  renderArchiveFilms();
   const list = FREE_MOVIE_SOURCES.filter(m => !q || (m.title + " " + m.category + " " + m.description).toLowerCase().includes(q));
   $("#freeGrid").innerHTML = list.map(freeCard).join("");
   $("#freeStatus").textContent = list.length
@@ -348,7 +460,7 @@ function showTab(t){
   });
   if(t==="search") runSearch();
   if(t==="watch") renderWatch();
-  if(t==="free") loadFreeMovies();
+  if(t==="free") { loadFreeMovies(); loadArchiveFilms(); }
   window.scrollTo(0,0);
 }
 
@@ -397,6 +509,7 @@ async function openMovie(id){
 function closeMovie(){
   $("#playerBox").innerHTML = "";   // stops playback
   $("#mWatch").classList.remove("hidden");
+  $("#videoUrlInput").closest("section").classList.remove("hidden");
   $("#modal").classList.add("hidden");
   document.body.style.overflow = "";
   current = null;
@@ -420,10 +533,15 @@ document.addEventListener("click", e=>{
   if (freeOpen) { openFreeMovie(freeOpen.dataset.freeId); return; }
   const freeDownload = e.target.closest(".free-download");
   if (freeDownload) { downloadFreeMovie(freeDownload.dataset.freeDownload, freeDownload); return; }
+  const archivePlay = e.target.closest(".archive-play");
+  if (archivePlay) { playArchiveFilm(archivePlay.dataset.archiveId); return; }
+  const archiveDownload = e.target.closest(".archive-download");
+  if (archiveDownload) { downloadArchiveFilm(archiveDownload.dataset.archiveId, archiveDownload); return; }
   const o = e.target.closest(".open"); if(o){ openMovie(o.dataset.id); return; }
   const n = e.target.closest(".nav"); if(n){ showTab(n.dataset.tab); }
 });
 $("#freeSearch").addEventListener("input", renderFreeMovies);
+$("#freeSearch").addEventListener("input", renderArchiveFilms);
 $("#closeBtn").addEventListener("click", closeMovie);
 $("#mWatch").addEventListener("click", toggleWatch);
 $("#downloadVideoBtn").addEventListener("click", async () => {
